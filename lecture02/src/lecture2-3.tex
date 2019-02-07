@@ -1,0 +1,186 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+2\protect\vspace{1em}\\}Указатели и массивы}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+%Использование памяти в работающей программе.
+%Стек и куча.
+
+\begin{frame}[fragile]{Указатели}
+    \begin{itemize}
+        \item Указатель — это переменная, хранящая адрес некоторой 
+            ячейки памяти.
+           
+        \item Указатели являются типизированными.
+\begin{lstlisting}
+int   i = 3; // переменная типа int
+int * p = 0; // указатель на переменную типа int
+\end{lstlisting}
+        
+        \item Нулевому указателю (которому присвоено значение \code{0}) не~соответствует никакая ячейка памяти.
+
+        \item Оператор взятия адреса переменной \code{\&}.
+
+        \item Оператор разыменования \code{*}.
+
+\begin{lstlisting}
+p  = &i; // указатель p указывает на переменную i
+*p = 10; // изменяется ячейка по адресу p, т.е. i
+\end{lstlisting}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Передача параметров по указателю}
+Рассмотрим функцию, меняющую параметры местами:
+\begin{lstlisting}
+void swap (int a, int b) {
+    int t = a;
+    a = b;
+    b = t;
+}
+
+int main() {
+    int k = 10, m = 20;
+    swap (k, m);
+    cout << k << ' ' << m << endl; // 10 20
+    return 0;
+}
+\end{lstlisting}
+
+{\tt swap} изменяет локальные копии переменных {\tt k} и {\tt m}.
+\end{frame}
+
+\begin{frame}[fragile]{Передача параметров по указателю}
+    Вместо значений типа \code{int} будем передавать указатели.
+\begin{lstlisting}
+void swap (int * a, int * b) {
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+int main() {
+    int k = 10, m = 20;
+    swap (&k, &m);
+    cout << k << ' ' << m << endl; // 20 10
+    return 0;
+}
+\end{lstlisting}
+
+{\tt swap} изменяет переменные {\tt k} и {\tt m} по указателям на них.
+\end{frame}
+
+
+\begin{frame}[fragile]{Массивы}
+    \begin{itemize}
+        \item Массив~— это набор однотипных элементов, расположенных в памяти
+            друг за другом, доступ к которым осуществляется по индексу.
+
+        \item \langcpp позволяет определять массивы на стеке.
+\begin{lstlisting}
+// массив 1 2 3 4 5 0 0 0 0 0
+int m[10] = {1, 2, 3, 4, 5}; 
+\end{lstlisting}
+
+        \item Индексация массива начинается с \code{0}, последний элемент
+            массива длины {\tt n} имеет индекс {\tt n - 1}.
+\begin{lstlisting}
+for (int i = 0; i < 10; ++i)
+    cout << m[i] << ' '; 
+cout << endl;
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Связь массивов и указателей}
+    \begin{itemize}
+        \item Указатели позволяют передвигаться по массивам.
+        \item Для этого используется арифметика указателей:
+\begin{lstlisting}
+int m[10] = {1, 2, 3, 4, 5}; 
+int * p = &m[0]; // адрес начала массива
+int * q = &m[9]; // адрес последнего элемента
+\end{lstlisting}
+            \begin{itemize}
+                \item {\tt (p + k)} — сдвиг на {\tt k} ячеек типа \code{int} вправо.
+                \item {\tt (p - k)} — сдвиг на {\tt k} ячеек типа \code{int} влево.
+                \item {\tt (q - p)} — количество ячеек между
+                    указателями.
+                \item {\tt p[k]} эквивалентно {\tt *(p + k)}.
+            \end{itemize}
+    \end{itemize}
+\begin{center}
+\begin{tikzpicture}[
+      start chain=1 going right,node distance=-0.15mm
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=5mm, minimum height=5mm,draw,on chain=1];
+    \tikzstyle{arrow} = [>=stealth',shorten >=2pt, shorten <=2pt]
+
+    \foreach \i in {1,2}
+        \node[cell,dashed] {};
+        
+    \node[cell,dashed] (b) {};
+
+    \foreach \i in {1,2,3,4,5}
+        \node[cell,thick] (m\i) {\i};
+        
+    \foreach \i in {0,0,0}
+        \node[cell,thick] {\i};
+
+    \node[cell,thick] (e) {0};
+    \node[cell,thick] {0};
+
+    \node[below of=b,yshift=-10mm] (p) {{\tt p}};
+    \path [arrow,->] (p) edge node {} (b.south east);
+
+    \node[below of=e,yshift=-10mm] (q) {{\tt q}};
+    \path [arrow,->] (q) edge node {} (e.south east);
+
+    \node[below of=m2,yshift=-10mm] (p2) {{\tt (p + 2)}};
+    \path [arrow,->] (p2) edge node {} (m2.south east);
+
+    \node[below of=m5,yshift=-10mm] (q4) {{\tt (q - 4)}};
+    \path [arrow,->] (q4) edge node {} (m5.south east);
+
+    \foreach \i in {1,2,3}
+        \node[cell,dashed] {};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Примеры}
+Заполнение массива:
+\begin{lstlisting}
+int m[10] = {}; // изначально заполнен нулями
+// \hspace{2cm} \&m[0] \hspace{13mm}  \&m[9]
+for (int * p = m ; p <= m + 9; ++p )
+    *p = (p - m) + 1;    
+// Массив заполнен числами от 1 до 10
+\end{lstlisting}
+Передача массива в функцию:
+\begin{lstlisting} 
+int max_element (int * m, int size) {
+    int max = *m; 
+    for (int i = 1; i < size; ++i)
+        if (m[i] > max)
+            max = m[i];
+    return max;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\end{document}

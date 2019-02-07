@@ -1,0 +1,98 @@
+%% MOOCenter presentation theme for beamer
+%%
+%% Alexander Smal <avsmal@gmail.com>, 2016
+%%
+
+\ProvidesPackage{mooc}[2013/11/26]
+\RequirePackage{cmap}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T2A]{fontenc}
+\RequirePackage[russian]{babel}
+\RequirePackage{xcolor}
+\RequirePackage{amssymb, amsmath}
+\RequirePackage{verbatim}
+\RequirePackage{tabularx}
+\RequirePackage{graphicx}
+\RequirePackage[]{listings}
+\RequirePackage{tikz}
+\RequirePackage{xspace}
+\RequirePackage[printwatermark]{xwatermark}
+\hypersetup{unicode}
+\RequirePackage{paratype}
+
+\setbeamersize{text margin left=10pt,text margin right=10pt}
+
+\usetikzlibrary{shapes.arrows,chains,decorations.pathreplacing}
+
+\author{Александр Смаль}
+
+\date{
+%   Санкт-Петербург, 2013
+}
+
+
+\definecolor{MOOCGray}{RGB}{240,240,240}
+\definecolor{MOOCBlue}{RGB}{38,57,200}
+\definecolor{MOOCGreen}{RGB}{38,130,63}
+
+\newcommand{\code}[1]{{\color{MOOCBlue}{\tt #1}}}
+
+\mode<presentation>
+{
+    %\usetheme{Pittsburgh}
+    %\pgfdeclareimage[width=.4\paperwidth]{logo}{MOOCenterLogo}
+    %\usecolortheme[named=MOOCBlue]{structure}
+
+    \setbeamertemplate{navigation symbols}{}
+    %\setbeamertemplate{headline}{\vskip10mm}%\insertshorttitle}%
+    %\pgfpathrectanglecorners{\pgfpoint{0pt}{0pt}}{\pgfpoint{\paperwidth}{-.15\paperheight}}
+    %\pgfsetfillcolor{MOOCBlue}
+    %\pgfusepath{fill}
+    %\pgftext[at=\pgfpoint{15pt}{-5pt},left,top]{\pgfuseimage{logo}}\hfill%
+    %\begin{tabularx}{.5\textwidth}{X}{\raisebox{-2.5em}{\color{white}{\insertshorttitle}}}\end{tabularx}%
+    %\hskip 2em \vspace{-2em}
+    %}
+    \setbeamertemplate{footline}{%
+        % \begin{tabularx}{0.98\textwidth}{Xr}
+        %     \hfill\color{MOOCBlue}www.compscicenter.ru\hfill\mbox{} & 
+        %\vbox to 0pt{\vskip-5mm \mbox{}
+        %\hfill\insertframenumber/\inserttotalframenumber\hspace{5mm}\mbox{}} %\\
+        % \end{tabularx}
+    }
+
+%    \newwatermark*[
+%      allpages,
+%      angle=0,
+%      scale=1,
+%      xpos=60,
+%      ypos=-35
+%     ]{\small\insertframenumber/\inserttotalframenumber}
+
+%    \setbeamertemplate{frametitle}[default][center]
+%    \addtobeamertemplate{frametitle}{\vskip40pt}{}
+%    \setbeamerfont{frametitle}{series=\bfseries}
+%    \setbeamerfont{title}{series=\bfseries}
+    
+    \setbeamertemplate{itemize items}[circle]
+
+    %\setbeamercolor{background canvas}{bg=MOOCGray}
+
+    %\setbeamercovered{transparent}
+    % or whatever (possibly just delete it)
+  }
+
+\lstset{extendedchars=true} 
+\lstset{language=C++, basicstyle=\small\ttfamily,  keywordstyle=\color{MOOCBlue},
+        commentstyle=\small\ttfamily\color{MOOCGreen}, showstringspaces=false,
+        extendedchars=true, texcl=true,
+        morekeywords={size_t,nullptr,static_assert,
+                      decltype,final,override,alignof,alignas, constexpr, noexcept}}
+\lstset{backgroundcolor=\color{MOOCGray}}
+
+\newcommand{\pitem}{\pause\item}
+\newcommand{\langc}{\text{C}\xspace}
+\newcommand{\langcpp}[1][]{\text{C++#1}\xspace}
+
+\newcommand{\ql}{,,\relax}
+\newcommand{\qr}{``\xspace}
+\newcommand{\myq}[1]{\ql{#1}\qr}

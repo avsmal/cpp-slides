@@ -1,0 +1,166 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+3\protect\vspace{1em}\\}Конструктор копирования и оператор присваивания}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Копирование объектов}{}
+\begin{lstlisting}
+struct IntArray {
+    ...
+private:
+    size_t size_;
+    int *  data_;
+};
+
+int main() {
+    IntArray a1(10);
+    IntArray a2(20);
+    IntArray a3 = a1; // копирование
+    a2 = a1; // присваивание
+
+    return 0;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Конструктор копирования}{}
+Если не определить конструктор копирования,
+то он сгенерируется компилятором.
+\begin{lstlisting}
+struct IntArray {
+    IntArray(IntArray const& a) 
+        : size_(a.size_), data_(new int[size_]) 
+    {
+        for (size_t i = 0; i != size_; ++i)
+            data_[i] = a.data_[i];    
+    }
+    ...
+private:
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Оператор присваивания}{}
+Если не определить оператор присваивания,
+то он тоже сгенерируется компилятором.
+\begin{lstlisting}
+struct IntArray {
+    IntArray & operator=(IntArray const& a) 
+    {
+        if (this != &a) {
+            delete [] data_;
+            size_ = a.size_;
+            data_ = new int[size_];
+            for (size_t i = 0; i != size_; ++i)
+                data_[i] = a.data_[i];
+        }
+        return *this;
+    }
+    ...
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Метод {\tt swap}}{}
+\begin{lstlisting}
+struct IntArray {
+    void swap(IntArray & a) {
+        size_t const t1 = size_;
+        size_ = a.size_;
+        a.size_ = t1;
+
+        int * const t2 = data_;
+        data_ = a.data_;
+        a.data_ = t2;
+    }
+    ...
+private:
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Метод {\tt swap}}{}
+Можно использовать функцию {\tt std::swap} и файла \code{algorithm}.
+\begin{lstlisting}
+#include <algorithm>
+
+struct IntArray {
+    void swap(IntArray & a) {
+        std::swap(size_, a.size_);
+        std::swap(data_, a.data_);
+    }
+    ...
+private:
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Реализация оператора = при помощи {\tt swap}}{}
+\begin{lstlisting}
+struct IntArray {
+    IntArray(IntArray const& a) 
+        : size_(a.size_), data_(new int[size_]) {
+        for (size_t i = 0; i != size_; ++i)
+            data_[i] = a.data_[i];    
+    }
+    IntArray & operator=(IntArray const& a) {
+        if (this != &a)
+            IntArray(a).swap(*this);
+        return *this;
+    }
+    ...
+private:
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Запрет копирования объектов}{}
+    Для того, чтобы запретить копирование, нужно объявить конструктор копирования
+    и оператор присваивания как \code{private} и не определять их.
+\begin{lstlisting}
+struct IntArray {
+    ...
+private:
+    IntArray(IntArray const& a);
+    IntArray & operator=(IntArray const& a);
+
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Методы, генерируемые компилятором}{}
+    Компилятор генерирует четыре метода:
+    \begin{enumerate}
+        \item конструктор по умолчанию,
+        \item конструктор копирования,
+        \item оператор присваивания,
+        \item деструктор.
+    \end{enumerate}
+
+    Если потребовалось переопределить конструктор копирования,
+    оператор присваивания или деструктор, то нужно 
+    переопределить и остальные методы из этого списка. 
+\end{frame}
+\end{document}

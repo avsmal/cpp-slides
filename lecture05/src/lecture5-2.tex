@@ -1,0 +1,84 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+5\protect\vspace{1em}\\}Правила переопределения операторов}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Переопределение арифметических и битовых операторов}
+    \begin{lstlisting}
+struct String {
+    String( char const * cstr ) { ... }
+
+    String & operator+=(String const& s) {
+        ...
+        return *this;    
+    }
+    //\verb!String operator+(String const& s2) const {...}!
+};
+
+String operator+(String s1, String const& s2) { 
+    return s1 += s2; 
+}
+    \end{lstlisting}
+    \begin{lstlisting}
+    String s1("world");
+    String s2 = "Hello " + s1;
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{``Правильное'' переопределение операторов сравнения}
+    \begin{lstlisting}[basicstyle=\fontsize{9pt}{1em}\ttfamily]
+bool operator==(String const& a, String const& b) {
+    return ...
+}
+bool operator!=(String const& a, String const& b) {
+    return !(a == b);
+}
+bool operator<(String const& a, String const& b) {
+    return ...
+}
+bool operator>(String const& a, String const& b) {
+    return b < a;
+}
+bool operator<=(String const& a, String const& b) {
+    return !(b < a);
+}
+bool operator>=(String const& a, String const& b) {
+    return !(a < b);
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{О чём стоит помнить}
+    \begin{itemize}
+        \item Стандартная семантика операторов.
+\begin{lstlisting}
+void operator+(A const & a, A const& b) {}
+\end{lstlisting}
+        \item Приоритет операторов.
+\begin{lstlisting}
+    Vector a, b, c;
+    c = a + a ^ b * a; //?????
+\end{lstlisting}
+    \item Хотя бы один из параметров
+            должен быть пользовательским.
+\begin{lstlisting}
+    void operator*(double d, int i) {}
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\end{document}
+
+ 

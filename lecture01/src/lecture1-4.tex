@@ -1,0 +1,188 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+1\protect\vspace{1em}\\}Структура кода на \langcpp}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Разбиение программы на файлы}
+
+Зачем разбивать программу на файлы? 
+\begin{itemize}
+    \item С небольшими файлами удобнее работать.
+    \item Разбиение на файлы структурирует код.
+    \item Позволяет нескольким программистам разрабатывать 
+        приложение одновременно.
+    \item Ускорение повторной компиляции при небольших 
+        изменениях в отдельных частях программы. 
+        
+\end{itemize}
+    Файлы с кодом на \langcpp бывают двух типов:
+    \begin{enumerate}
+        \item файлы с исходным кодом (расширение \texttt{.cpp}, иногда \texttt{.C}),
+        \item заголовочные файлы (расширение \texttt{.hpp} или \texttt{.h}).
+    \end{enumerate}
+\end{frame}
+
+%Для того, чтобы говорить о компиляции С++ кода нужно сначала изучить
+%его структуру. Программа на С++ состоит из двух типов файлов:
+%файлов с исходным кодом (обычно с расширением .cpp или .С) и заголовочных файлов
+%(с расширением .h или .hpp). Предполагается, что весь код написан в файлах с
+%исходным кодом, а заголовочные файлы служат только для описания зависимостей.
+%
+%Давайте ответим на простой вопрос: зачем разбивать программу на
+%файлы? Ответ просто: потому, что нам удобнее работать с небольшими файлами,
+%чем с одним огромным, в котором ничего не найти. Это так же позволяет
+%разрабатывать приложение по частям параллельно, когда каждый программист
+%работает над какими-то своими файлами. Есть и другие причины для разделения на
+%файлы -- это переиспользование кода (в случае библиотек) и ускорение перекомпиляции
+%при небольших изменениях в отдельных частях программы. В таких случаях, если
+%изменения затронули небольшое количество файлов, достаточно перекомпилировать
+%только их.
+
+\begin{frame}[fragile]{Заголовочные файлы}
+\begin{itemize}
+    \item Файл {\tt foo.cpp}:
+{\small \begin{lstlisting}
+// определение (definition) функции foo
+void foo()
+{
+    bar();
+}
+\end{lstlisting}}
+
+\item Файл {\tt bar.cpp}:
+\begin{lstlisting}
+// определение (definition) функции bar
+void bar() { }
+\end{lstlisting}
+
+Компиляция этих файлов выдаст ошибку.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Заголовочные файлы}
+\begin{itemize}
+    \item Файл {\tt foo.cpp}:
+{\small \begin{lstlisting}
+// объявление (declaration) функции bar
+void bar();
+
+// определение (definition) функции foo
+void foo()
+{
+    bar();
+}
+\end{lstlisting}}
+
+\item Файл {\tt bar.cpp}:
+\begin{lstlisting}
+// определение (definition) функции bar
+void bar() { }
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Заголовочные файлы}
+    Предположим, что мы изменили функцию {\tt bar}.
+\begin{itemize}
+    \item Файл {\tt foo.cpp}:
+{\small \begin{lstlisting}
+void bar();
+
+void foo()
+{
+    bar();
+}
+\end{lstlisting}}
+
+\item Файл {\tt bar.cpp}:
+\begin{lstlisting}
+int bar() { return 1; }
+\end{lstlisting}
+
+Данный код некорректен — объявление отличается от определения.
+(Неопределённое поведение.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Заголовочные файлы}
+    Добавим заголовочный файл {\tt bar.hpp}.
+\begin{itemize}
+
+    \item Файл {\tt foo.cpp}:
+\begin{lstlisting}
+#include "bar.hpp"
+
+void foo()
+{
+    bar();
+}
+\end{lstlisting}
+
+\item Файл {\tt bar.cpp}:
+\begin{lstlisting}
+int bar() { return 1; }
+\end{lstlisting}
+
+    \item Файл {\tt bar.hpp}:
+\begin{lstlisting}
+int bar();
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Двойное включение}
+Может случиться двойное включение заголовочного файла.
+\begin{itemize}
+    \item Файл {\tt foo.cpp}:
+\begin{lstlisting}
+#include "foo.hpp"
+#include "bar.hpp"
+
+void foo()
+{
+    bar();
+}
+\end{lstlisting}
+
+    \item Файл {\tt foo.hpp}:
+\begin{lstlisting}
+#include "bar.hpp"
+
+void foo();
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Стражи включения}
+Это можно исправить двумя способами:
+\begin{itemize}
+    \item (наиболее переносимо) Файл {\tt bar.hpp}:
+\begin{lstlisting}
+#ifndef BAR_HPP
+#define BAR_HPP
+
+int bar();
+#endif
+\end{lstlisting}
+    \item (наиболее просто) Файл {\tt bar.hpp}: 
+\begin{lstlisting}
+#pragma once
+
+int bar();
+\end{lstlisting}
+\end{itemize}
+{\bf Резюме:} {\tt .cpp} — для определений, {\tt .hpp} — для объявлений.
+\end{frame}
+\end{document}

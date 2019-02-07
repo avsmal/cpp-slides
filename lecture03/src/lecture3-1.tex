@@ -1,0 +1,100 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+3\protect\vspace{1em}\\}Структуры}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Зачем группировать данные?}
+    Какая должна быть сигнатура у функции, которая вычисляет длину отрезка на
+    плоскости?
+\begin{lstlisting}
+double length(double x1, double y1, 
+              double x2, double y2);
+\end{lstlisting}
+    А сигнатура функции, проверяющей пересечение отрезков?
+\begin{lstlisting}
+bool intersects(double x11, double y11, 
+                double x12, double y12,
+                double x21, double y21, 
+                double x22, double y22,
+                double * xi, double * yi);
+\end{lstlisting}
+Координаты точек являются логически связанными данными, которые всегда передаются
+вместе.\\
+Аналогично связанны координаты точек отрезка.
+\end{frame}
+
+\begin{frame}[fragile]{Структуры}
+    Структуры~--- это способ синтаксически (и физически)
+    сгруппировать логически связанные данные.
+\begin{lstlisting}
+struct Point {
+    double x;
+    double y;
+};
+
+struct Segment {
+    Point p1;
+    Point p2;
+};
+
+double length(Segment s);  
+
+bool intersects(Segment s1, 
+                Segment s2, Point * p);
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Работа со структурами}
+Доступ к полям структуры осуществляется через
+оператор '\code{.}':
+\begin{lstlisting}
+#include <cmath>
+
+double length(Segment s) {
+    double dx = s.p1.x - s.p2.x;
+    double dy = s.p1.y - s.p2.y;
+    return sqrt(dx * dx + dy * dy);
+}
+\end{lstlisting}
+Для указателей на структуры используется оператор '\code{->}'.
+\begin{lstlisting}
+double length(Segment * s) {
+    double dx = s->p1.x - s->p2.x;
+    double dy = s->p1.y - s->p2.y;
+    return sqrt(dx * dx + dy * dy);
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Инициализация структур}
+Поля структур можно инициализировать подобно массивам:
+\begin{lstlisting}
+    Point p1  = { 0.4, 1.4 };
+    Point p2  = { 1.2, 6.3 };
+    Segment s = { p1,  p2  };
+\end{lstlisting}
+Структуры могут хранить переменные разных типов.
+\begin{lstlisting}
+struct IntArray2D {
+    size_t a;
+    size_t b;
+    int ** data;
+};
+\end{lstlisting}
+\begin{lstlisting}
+    IntArray2D a = {n, m, create_array2d(n, m)};
+\end{lstlisting}
+\end{frame}
+\end{document}

@@ -1,0 +1,191 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+3\protect\vspace{1em}\\}Константность}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Определение констант}{}
+    \begin{itemize}
+        \item Ключевое слово \code{const} позволяет
+            определять типизированные константы.
+\begin{lstlisting}
+double const pi = 3.1415926535;
+int const day_seconds = 24 * 60 * 60;   
+// массив констант
+int const days[12] = {31, 28, 31,
+                      30, 31, 30,
+                      31, 31, 30,
+                      31, 30, 31};
+\end{lstlisting}
+        \item Попытка изменить константные данные приводит к неопределённому
+            поведению.
+\begin{lstlisting}
+    int * may = (int *) &days[4];
+    *may = 30;
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели и \code{const}}{}
+В \langcpp можно определить как константный указатель,
+так и указатель на константу:
+\begin{lstlisting}
+int a = 10;
+const int * p1 = &a; // указатель на константу
+int const * p2 = &a; // указатель на константу
+*p1 = 20; // ошибка
+p2  = 0;  // ОК
+
+int * const p3 = &a; // константный указатель
+*p3 = 30; // OK
+p3  = 0;  // ошибка
+
+// константный указатель на константу
+int const * const p4 = &a;
+*p4 = 30; // ошибка
+p4  = 0;  // ошибка
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели и \code{const}}{}
+    Можно использовать следующее правило:\\
+    \begin{center}
+    ``слово \code{const} делает неизменяемым тип слева от него''.
+    \end{center}
+
+\begin{lstlisting}
+int a = 10;
+int * p = &a;   
+
+// указатель на указатель на const int
+int const **  p1 = &p;
+
+// указатель на константный указатель на int
+int * const * p2 = &p;
+
+// константный указатель на указатель на int
+int ** const  p3 = &p;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Ссылки и \code{const}}{}
+    \begin{itemize}
+        \item Ссылка сама по себе является неизменяемой.
+\begin{lstlisting}
+int a = 10;
+int & const b = a; // ошибка
+int const & c = a; // ссылка на константу
+\end{lstlisting}
+        \item Использование константных ссылок позволяет избежать
+            копирования объектов при передаче в функцию.
+\begin{lstlisting}
+Point midpoint(Segment const & s);
+\end{lstlisting}
+        \item По константной ссылке можно передавать rvalue.
+\begin{lstlisting}
+    Point p = midpoint(Segment(Point(0,0), 
+                               Point(1,1)));
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Константные методы}{}
+    \begin{itemize}
+        \item Методы классов могут быть объявлены как \code{const}.
+\begin{lstlisting}
+struct IntArray {
+    size_t size() const;
+};
+\end{lstlisting}
+        \item Такие методы не могут менять поля объекта\\
+            (тип \code{this}~--- указатель на \code{const}).
+
+        \item У константных объектов (через указатель или ссылку на константу)
+            можно вызывать только константные методы:
+
+\begin{lstlisting}
+IntArray const * p = foo();
+p->resize(); // ошибка
+\end{lstlisting}
+        \item Внутри константных методов можно вызывать только константные методы.
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Две версии одного метода}{}
+    \begin{itemize}
+        \item Слово \code{const} является частью сигнатуры метода.
+\begin{lstlisting}
+size_t IntArray::size() const {return size_;}
+\end{lstlisting}
+        \item Можно определить две версии одного метода:
+\begin{lstlisting}
+struct IntArray {
+    int get(size_t i) const { 
+        return data_[i]; 
+    }
+    int & get(size_t i) { 
+        return data_[i]; 
+    }
+private:
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Cинтаксическая и логическая константность}{}
+\begin{itemize}
+    \item Синтаксическая константность: константные методы
+        не могут менять поля (обеспечивается компилятором).
+    \item Логическая константность~--- нельзя менять те данные, 
+        которые определяют состояние объекта.
+\begin{lstlisting}
+struct IntArray {
+    void foo() const {
+       // нарушение логической константности
+        data_[10] = 1; 
+    }
+private:
+    size_t size_;
+    int *  data_;
+};
+\end{lstlisting}
+\end{itemize}
+    
+\end{frame}
+
+
+\begin{frame}[fragile]{Ключевое слово \code{mutable}}{}
+Ключевое слово \code{mutable} позволяет определять поля,
+которые можно изменять внутри константных методов:
+\begin{lstlisting}
+struct IntArray {
+    size_t size() const { 
+        ++counter_;
+        return size_; 
+    }
+
+private:
+    size_t size_;
+    int *  data_;
+
+    mutable size_t counter_;
+};
+\end{lstlisting}
+\end{frame}
+
+\end{document}

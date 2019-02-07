@@ -1,0 +1,194 @@
+\documentclass[aspectration=1610]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+11\protect\vspace{1em}\\}Метапрограммирование: основы}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Метапрограммирование}
+\begin{itemize}
+    \item Метапрограммированием называют создание программ, \\которые порождают другие программы.
+    
+    \pitem Шаблоны \langcpp можно рассматривать как функциональный\\ язык
+    для метапрограммирования.
+    
+    \pitem Метапрограммы \langcpp позволяют оперировать типами, \\шаблонами и значениями целочисленных типов.
+    
+    \pitem Метапрограммирование в \langcpp можно применять\\ для широкого круга задач:
+    \begin{itemize}
+        \item целочисленные compile-time вычисления,
+        \item compile-time проверка ошибок,
+        \item условная компиляция,
+        \item генеративное программирование,
+        \item \ldots
+    \end{itemize}
+    
+    \pitem Для метапрограммирования существуют целые\\ библиотеки,
+    например, MPL из boost.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Метафункции}
+Метафункция~--- это шаблонный класс, 
+который определяет \\имя типа \texttt{type} или целочисленную константу \texttt{value}.
+\begin{itemize}
+\item Аргументы метафункции~--- это аргументы шаблона.
+\item Возвращаемое значение~--- это \texttt{type} или \texttt{value}.
+\end{itemize}
+
+Метафункции могут возвращать типы:
+\begin{lstlisting}
+template<typename T> 
+struct AddPointer
+{
+    using type = T *; 
+};
+\end{lstlisting}
+и значения целочисленных типов:
+\begin{lstlisting}
+template<int N> 
+struct Square
+{
+    static int const value = N * N; 
+};
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Вычисления в compile-time}
+\begin{lstlisting}
+template<int N> 
+struct Fact 
+{
+    static int const
+        value = N * Fact<N - 1>::value;
+};
+
+template<> 
+struct Fact<0> 
+{
+    static int const value = 1;
+};
+
+int main() 
+{
+    std::cout << Fact<10>::value << std::endl;
+}
+\end{lstlisting}
+
+(Это вычисление можно реализовать через \code{constexpr}.) 
+\end{frame}
+
+%template<int N> struct Fib {
+%    constexpr static int 
+%        value = Fib<N - 1>::value + Fib<N - 2>::value;
+%};
+%template<> struct Fib<0> {
+%    static const int value = 0;
+%};
+%template<> struct Fib<1> {
+%    static const int value = 1;
+%};
+%int main() {
+%    Fib <10>::value << std::endl;
+%}
+
+\begin{frame}[fragile]{Определение списка}
+Шаблоны позволяют определять алгебраические типы данных.
+\begin{lstlisting}
+// определяем список
+template <typename ... Types>
+struct TypeList; 
+
+// специализация по умолчанию
+template <typename H, typename... T>
+struct TypeList<H, T...> 
+{
+    using Head = H;
+    using Tail = TypeList<T...>;
+};
+
+// специализация для пустого списка
+template <>
+struct TypeList<> { };
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Длина списка}
+\begin{lstlisting}
+// вычисление длины списка
+template<typename TL>
+struct Length
+{
+    static int const value = 1 +
+        Length<typename TL::Tail>::value;
+};
+
+template<>
+struct Length<TypeList<>>
+{
+    static int const value = 0;
+};
+
+int main()
+{
+    using TL = TypeList<double, float, int, char>;
+    std::cout << Length<TL>::value << std::endl;
+    return 0;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Операции со списком}
+\begin{lstlisting}
+// добавление элемента в начало списка
+template<typename H, typename TL>
+struct Cons;
+
+template<typename H, typename... Types>
+struct Cons<H, TypeList<Types...>>
+{
+    using type = TypeList<H, Types...>;
+};
+
+// конкатенация списков
+template<typename TL1, typename TL2>
+struct Concat;
+
+template<typename... Ts1, typename... Ts2>
+struct Concat<TypeList<Ts1...>, TypeList<Ts2...>>
+{
+    using type = TypeList<Ts1..., Ts2...>;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Вывод списка}
+\begin{lstlisting}
+// вывод списка в поток os
+template<typename TL>
+void printTypeList(std::ostream & os)
+{
+    os << typeid(typename TL::Head).name() << '\n';
+    printTypeList<typename TL::Tail>(os);
+};
+
+// вывод пустого списка
+template<>
+void printTypeList<TypeList<>>(std::ostream & os) {}
+
+int main()
+{
+    using TL = TypeList<double, float, int, char>;
+    printTypeList<TL>(std::cout);
+    return 0;
+}
+\end{lstlisting}
+\end{frame}
+
+\end{document}

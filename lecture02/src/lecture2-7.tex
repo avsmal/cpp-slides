@@ -1,0 +1,187 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+2\protect\vspace{1em}\\}Многомерные массивы}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+%Использование памяти в работающей программе.
+%Стек и куча.
+
+\begin{frame}[fragile]{Многомерные встроенные массивы}
+    \begin{itemize}
+        \item \langcpp позволяет определять многомерные массивы:
+        \begin{lstlisting}
+int m2d[2][3] = { {1, 2, 3}, {4, 5, 6} };
+for( size_t i = 0; i != 2; ++i ) {
+    for( size_t j = 0; j != 3; ++j ) {
+        cout << m2d[i][j] << ' ';
+    }
+    cout << endl;
+}
+        \end{lstlisting}
+    \item Элементы {\tt m2d} располагаются в памяти ``по строчкам''.
+
+    \item Размерность массивов может быть любой, но на практике
+        редко используют массивы размерности $> 4$.
+
+\begin{lstlisting}
+int m4d[2][3][4][5] = {};
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Динамические массивы}
+    \begin{itemize}
+        \item Для выделения одномерных динамических массивов
+            обычно используется оператор \code{new []}.
+\begin{lstlisting}
+int * m1d = new int[100];
+\end{lstlisting}
+        \item Какой тип должен быть у указателя на двумерный динамический
+            массив?
+            \begin{itemize}
+                \item Пусть {\tt m}~--- указатель на двумерный массив типа              \code{int}.
+
+                \item Значит {\tt m[i][j]} имеет тип \code{int} (точнее
+                    \code{int \&}).
+
+                \item {\tt m[i][j] $\Leftrightarrow$ *(m[i] + j)},
+                    т.е. тип {\tt m[i]}~--- \code{int *}.
+
+                \item аналогично, {\tt m[i] $\Leftrightarrow$ *(m + i)},
+                    т.е. тип {\tt m}~--- \code{int **}.
+            \end{itemize}
+            \item Чему соответствует значение {\tt m[i]}?\\ 
+                Это адрес строки с номером {\tt i}.
+
+            \item Чему соответствует значение {\tt m}?\\
+                Это адрес массива с указателями на строки.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Двумерные массивы}
+    Давайте рассмотрим создание массива $5\times 4$.
+    
+\begin{center}
+\begin{tikzpicture}[                                                          
+      start chain=1 going right, node distance=-0.15mm,
+      start chain=2 going right
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=4mm, minimum height=4mm,draw];
+    \tikzstyle{arrow} = [>=stealth']
+
+    \begin{scope}[shift={(4cm,35mm)}]
+    \foreach \i in {1,2,3,4} {
+        \node[cell,on chain=2] (m\i-1) {};   
+            \foreach \j/\k in {{2/1},{3/2},{4/3},{5/4}}
+                \node[cell,below of=m\i-\k,yshift=-7mm] (m\i-\j) {};
+    };
+   
+    \node[on chain=2] (t0) {{\tt m[0]}};   
+    \foreach \i/\k in {{1/0},{2/1},{3/2},{4/3}}
+        \node[below of=t\k,yshift=-7mm] (t\i) {{\tt m[\i]}};
+    \end{scope}
+
+    \node[on chain=1] (m) {{\tt m}};
+    \foreach \i in {1,2,3,4,5} {
+        \node[cell,on chain=1] (m\i) {};
+        \path [arrow,->] (m\i.center) edge node {} (m1-\i.west);     
+    };
+\end{tikzpicture}
+        \begin{lstlisting}
+int ** m = new int * [5];
+for (size_t i = 0; i != 5; ++i)
+    m[i] = new int[4];
+        \end{lstlisting}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Двумерные массивы}
+    Выделение и освобождение двумерного массива размера $a\times b$.
+        \begin{lstlisting}
+int ** create_array2d(size_t a, size_t b) {
+    int ** m = new int *[a];
+    for (size_t i = 0; i != a; ++i)
+        m[i] = new int[b];
+    return m;
+}
+
+void free_array2d(int ** m, size_t a, size_t b) {
+    for (size_t i = 0; i != a; ++i)
+        delete [] m[i];
+    delete [] m;
+}
+        \end{lstlisting}
+При создании массива оператор \code{new} вызывается $(a + 1)$ раз.
+\end{frame}
+
+\begin{frame}[fragile]{Двумерные массивы: эффективная схема}
+    Рассмотрим эффективное создание массива $5\times 4$.
+    
+\begin{center}
+\begin{tikzpicture}[                                                          
+      start chain=1 going right, node distance=-0.15mm,
+      start chain=2 going right
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=4mm, minimum height=4mm,draw];
+    \tikzstyle{arrow} = [>=stealth']
+    \tikzstyle{mbrace} = [decorate,decoration={brace,amplitude=5pt}];
+
+    \begin{scope}[shift={(0cm,25mm)}]
+    \foreach \i in {0,1,2,3,4} {
+        \node[cell,on chain=2] (m\i-1) {};
+        \node[above of=m\i-1, shift={(6mm,7mm)}] (t\i) {{\tt\small m[\i]}};
+         \foreach \j in {2,3,4}
+             \node[cell,on chain=2] (m\i-\j) {};
+        \draw[mbrace] 
+            (m\i-1.north west)--(m\i-4.north east) node[midway,anchor=west,xshift=6pt] {};
+    };
+    \end{scope}
+
+    \node[on chain=1] (m) {{\tt m}};
+    \foreach \i in {0,1,2,3,4} {
+        \node[cell,on chain=1] (m\i) {};
+        \path [arrow,->] (m\i.center) edge node {} (m\i-1.south west);     
+    };
+\end{tikzpicture}
+        \begin{lstlisting}
+int ** m = new int * [5];
+m[0] = new int[5 * 4];
+for (size_t i = 1; i != 5; ++i)
+    m[i] = m[i - 1] + 4;
+        \end{lstlisting}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Двумерные массивы: эффективная схема}
+    Эффективное выделение и освобождение двумерного массива размера $a\times b$.
+
+    \begin{lstlisting}
+int ** create_array2d(size_t a, size_t b) {
+    int ** m = new int *[a];
+    m[0] = new int[a * b];
+    for (size_t i = 1; i != a; ++i)
+        m[i] = m[i - 1] + b;
+    return m;
+}
+
+void free_array2d(int ** m, size_t a, size_t b) {
+    delete [] m[0];
+    delete [] m;
+}
+        \end{lstlisting}
+При создании массива оператор \code{new} вызывается 2 раза.
+\end{frame}
+
+\end{document}

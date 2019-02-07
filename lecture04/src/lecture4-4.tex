@@ -1,0 +1,171 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+4\protect\vspace{1em}\\}Таблица виртуальных методов}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Таблица виртуальных методов}
+    \begin{itemize}
+        \item Динамический полиморфизм реализуется
+            при помощи таблиц виртуальных методов.
+
+        \item Таблица заводится для каждого {\em полиморфного} класса.
+
+        \item Объекты полиморфных классов содержат
+            указатель на таблицу виртуальных методов
+            соответствующего класса.
+
+\begin{tikzpicture}[                                                          
+      start chain=1 going right, node distance=-0.15mm,
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=4mm, minimum height=6mm,on chain=1,draw];
+    \tikzstyle{arrow} = [>=stealth']
+    \tikzstyle{mbrace} = [decorate,decoration={brace,amplitude=5pt}];
+    \node[cell,color=blue!80] (p0) {\tt vptr};
+    \node[cell] (p1) {\tt name\_};
+    \node[cell] (p2) {\tt age\_};
+    \node[minimum width=1cm, on chain=1] () {};
+    \draw[mbrace] 
+       (p2.south east)--(p0.south west) node[midway,anchor=west,xshift=6pt] {};
+    \node[above of=p1, shift={(0mm,-7mm)}] () {\tt Person};
+
+    \node[cell,color=blue!80] (s0) {\tt vptr};
+    \node[cell] (s1) {\tt name\_};
+    \node[cell] (s2) {\tt age\_};
+    \node[cell] (s3) {\tt uni\_};
+    \draw[mbrace] 
+       (s0.north west)--(s2.north east) node[midway,anchor=west,xshift=6pt] {};
+    \node[above of=s1, shift={(0mm,7mm)}] () {\tt Person};
+    \draw[mbrace] 
+       (s3.south east)--(s0.south west) node[midway,anchor=east,xshift=6pt] {};
+    \node[below of=s2, shift={(-6mm,-7mm)}] () {\tt Student};
+\end{tikzpicture}
+        \item Вызов виртуального метода — это вызов метода
+            по адресу из таблицы (в коде сохраняется номер метода в таблице).
+\begin{lstlisting}
+p->occupation(); // p->vptr[1]();
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Таблица виртуальных методов}
+    \begin{lstlisting}
+struct Person {
+   virtual ~Person() {}
+   string name() const {return name_;}
+   virtual string occupation() const = 0;
+   ...
+};
+struct Student : Person {
+   string  occupation() const {return "student";}
+   virtual int group() const {return group_;}
+   ...
+};
+    \end{lstlisting}
+
+\begin{minipage}{3cm}
+    {\tt Person}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        0 & \texttt{\textasciitilde{}Person}   & \texttt{0xab22} \\\hline
+        1 & \texttt{occupation} & \texttt{0x0000} \\\hline
+    \end{tabular}\vspace{4.8mm}\mbox{}
+\end{minipage}\hspace{2cm}
+\begin{minipage}{3cm}
+    {\tt Student}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        0 & \texttt{\textasciitilde{}Student} &  \texttt{0xab46} \\\hline
+        1 & \texttt{occupation} & \texttt{0xab68} \\\hline
+        2 & \texttt{group} & \texttt{0xab8a}     \\\hline
+    \end{tabular}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Построение таблицы виртуальных методов}
+    \begin{minipage}{.58\textwidth}
+        \begin{lstlisting}[basicstyle=\fontsize{8pt}{1em}\ttfamily]
+struct Person {
+    virtual ~Person() {}
+    virtual string occupation() = 0;
+    ...
+};
+
+struct Teacher : Person {
+    string occupation() {...}
+    virtual string course() {...}
+    ...
+};
+
+struct Professor : Teacher {
+    string occupation() {...}
+    virtual string thesis() {...}
+    ...
+};
+    \end{lstlisting}
+\end{minipage}\hspace{2mm}
+\begin{minipage}{3cm}
+    {\tt Person}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        0 & \texttt{\textasciitilde{}Person}  & \texttt{0xab20} \\\hline
+        1 & \texttt{occupation}                & \texttt{0x0000} \\\hline
+    \end{tabular}
+    \vspace{1em}
+
+    {\tt Teacher}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        0 & \texttt{\textasciitilde{}Teacher} & \texttt{0xab48} \\\hline
+        1 & \texttt{occupation}                & \texttt{0xab60} \\\hline
+        2 & \texttt{course}                   & \texttt{0xab84}  \\\hline
+    \end{tabular}
+    \vspace{1em}
+
+    {\tt Professor}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        0 & \texttt{\textasciitilde{}Professor} & \texttt{0xaba8} \\\hline
+        1 & \texttt{occupation}& \texttt{0xabb4} \\\hline
+        2 & \texttt{course}   & \texttt{0xab84} \\\hline
+        3 & \texttt{thesis}   & \texttt{0xabc8} \\\hline
+    \end{tabular}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Виртуальные методы в конструкторе и деструкторе}
+    \begin{lstlisting}
+struct Person {
+    virtual string name() const {return name_;}
+    ...
+};
+struct Teacher : Person {
+    Teacher(string const& nm) : Person(nm)
+    { cout << name(); }
+    ...
+};
+struct Professor : Teacher {
+    string name() const {return "Prof. "+name_;}
+    ...
+};
+    \end{lstlisting}
+\begin{lstlisting}
+    Professor p("Stroustrup"); // \verb!"Stroustrup"!
+\end{lstlisting}
+
+\end{frame}
+
+\end{document}
+
+ 

@@ -1,0 +1,207 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+5\protect\vspace{1em}\\}Перегрузка операторов}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Основные операторы}
+    \begin{block}{Арифметические}
+        \begin{itemize}
+            \item Унарные: префиксные {\color{blue}\verb!+ - ++ --!},
+                постфиксные {\color{blue}\verb!++ --!}
+            \item Бинарные: {\color{blue}\verb!+ - * / % += -= *= /= %=!}
+        \end{itemize}
+    \end{block}
+    \begin{block}{Битовые}
+        \begin{itemize}
+            \item Унарные: {\color{blue}\verb!~!}.
+            \item Бинарные: {\color{blue}\verb!& | ^ &= |= ^= >> <<!}.
+        \end{itemize}
+    \end{block}
+    \begin{block}{Логические}
+        \begin{itemize}
+            \item Унарные: {\color{blue}\verb#!#}. 
+            \item Бинарные: {\color{blue}\verb!&& ||!}.
+            \item Сравнения: {\color{blue}\verb#== != > < >= <=#}
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Другие операторы}
+        \begin{enumerate}
+            \item Оператор присваивания: {\color{blue}\verb!=!}
+            \item Специальные: 
+                \begin{itemize}
+                    \item префиксные {\color{blue}\verb!* &!}, 
+                    \item постфиксные  {\color{blue}\verb!-> ->*!}, 
+                    \item особые {\color{blue}\verb!,! \verb!. ::!}
+                \end{itemize}
+            \item Скобки: {\color{blue}\verb![] ()!}
+            \item Оператор приведения {\color{blue} \verb!(type)!}
+            \item Тернарный оператор: {\color{blue}\verb! x ? y : z !}
+            \item Работа с памятью: {\color{blue}\verb!new new[] delete delete[]!}
+        \end{enumerate}
+
+    Нельзя перегружать операторы {\color{blue}\verb!.! \verb!::!} и тернарный
+    оператор.
+\end{frame}
+
+\begin{frame}[fragile]{Перегрузка операторов}
+    \begin{lstlisting}
+Vector operator-(Vector const& v) {
+    return Vector(-v.x, -v.y);
+}
+
+Vector operator+(Vector const& v, 
+                 Vector const& w) {
+    return Vector(v.x + w.x, v.y + w.y);
+}
+
+Vector operator*(Vector const& v, double d) {
+    return Vector(v.x * d, v.y * d);
+}
+
+Vector operator*(double d, Vector const& v) {
+    return v * d;
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Перегрузка операторов внутри классов}
+    {}\small\textbf{NB:} Обязательно для {\color{blue}\verb!(type) [] () -> ->* =!}
+
+    \begin{lstlisting}[basicstyle=\fontsize{9pt}{1em}\ttfamily]
+struct Vector {
+    Vector operator-() const { return Vector(-x, -y); }
+    Vector operator-(Vector const& p) const {
+        return Vector(x - p.x, y - p.y);
+    }
+    Vector & operator*=(double d) {
+        x *= d;
+        y *= d;
+        return *this;
+    }
+    double operator[](size_t i) const { 
+        return (i == 0) ? x : y;
+    }
+    bool    operator()(double d)   const   { ... }
+    void    operator()(double a, double b) { ... }
+    double x, y;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Перегрузка инкремента и декремента}
+    \begin{lstlisting}
+struct BigNum {
+    BigNum & operator++() { //prefix
+        //increment
+        ...
+        return *this;
+    }
+
+    BigNum operator++(int) { //postfix
+        BigNum tmp(*this);
+        ++(*this);
+        return tmp;
+    }
+    ...
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Переопределение операторов ввода-вывода}
+    \begin{lstlisting}
+#include <iostream>
+        
+struct Vector { ... };
+
+std::istream& operator>>(std::istream & is, 
+                         Vector & p) {
+    is >> p.x >> p.y;
+    return is;
+}
+
+std::ostream& operator<<(std::ostream &os, 
+                         Vector const& p) {
+    os << p.x << ' ' <<  p.y;
+    return os;
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Умный указатель}
+Реализует принцип: {\em ``Получение ресурса есть инициализация''
+Resource Acquisition Is Initialization (RAII)}
+\begin{lstlisting}
+struct SmartPtr {
+   Data & operator*()  const {return *data_;}
+   Data * operator->() const {return  data_;}
+   Data * get()        const {return  data_;}
+   ... 
+private:
+   Data * data_;
+};
+
+bool operator==(SmartPtr const& p1,
+                SmartPtr const& p2) {
+    return p1.get() == p2.get();
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Оператор приведения}
+    \begin{lstlisting}
+struct String {
+    operator bool() const {
+        return size_ != 0;
+    }
+
+    operator char const *() const {
+        if (*this)
+            return data_;
+        return "";
+    }
+
+private:
+    char * data_;
+    size_t size_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Операторы с особым порядком вычисления}
+    \begin{lstlisting}
+int main() {
+    int a = 0;
+    int b = 5;
+    (a != 0) && (b = b / a);
+    (a == 0) || (b = b / a);
+
+    foo() && bar();
+    foo() || bar();
+    foo(), bar();
+}
+
+// no lazy semantics
+Tribool operator&&(Tribool const& b1, 
+                   Tribool const& b2) { 
+    ... 
+}
+    \end{lstlisting}
+\end{frame}
+
+\end{document}
+
+ 

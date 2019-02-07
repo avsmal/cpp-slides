@@ -1,0 +1,101 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+7\protect\vspace{1em}\\}Указатели на функции}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на функции}
+    Кроме указателей на значения в \langcpp присутствуют три особенных 
+    типа указателей:
+    \begin{enumerate}
+        \item указатели на функции (унаследовано из \texttt{C}),
+        \item указатели на методы,
+        \item указатели на поля классов.
+    \end{enumerate}
+    
+    \medskip\pause
+    Указатели на функции (и методы) используются для
+    \begin{enumerate}
+        \item параметризации алгоритмов,
+        \item обратных вызовов (callback),
+        \item подписки на события (шаблон Listener),
+        \item создания очередей событий/заданий.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на функции: параметризация алгоритмов}
+    \begin{lstlisting}
+void qsort (void* base, size_t num, size_t size,
+         int (*compar)(void const*,void const*));
+    \end{lstlisting}
+    \begin{lstlisting}
+int doublecmp(void const * a, void const * b) 
+{ 
+    double da = *static_cast<double const*>(a);
+    double db = *static_cast<double const*>(b);
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return 0;
+}
+
+void sort(double * p, double * q) 
+{
+    qsort(p, q - p, sizeof(double), &doublecmp);
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на функции: параметризация алгоритмов}
+Упростим предыдущий пример и сделаем его типобезопасным:
+    \begin{lstlisting}
+void sort(int * p, int * q, bool (*cmp)(int, int)) 
+{
+    for (int * m = q; m != p; --m)
+        for (int * r = p; r + 1 < m; ++r)
+         //  if ( *(r + 1) < *r )
+            if ( cmp(*(r + 1), *r) )
+                swap(*r, *(r + 1));
+}
+
+bool less   (int a, int b) { return a < b; }
+
+bool greater(int a, int b) { return a > b; }
+
+void sort(int * p, int * q, bool asc = true)
+{
+    sort(p, q, asc ? &less : &greater);
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{О полезности \texttt{typedef}}
+Что здесь объявлено?
+    \begin{lstlisting}
+char * (*func(int, int))(int, int, int *, float);
+    \end{lstlisting}
+\pause
+
+Функция двух целочисленных параметров, возвращающая указатель на функцию,
+которая возвращает указатель на \code{char} и имеет собственный список
+формальных параметров вида: \lstinline{(int, int, int *, float)}
+
+\medskip\pause
+
+Как стоило это написать:
+    \begin{lstlisting}
+typedef char* (*MyFunction)(int,int,int*,float);
+
+MyFunction func(int, int);
+    \end{lstlisting}
+\end{frame}
+
+\end{document}
+
+
+

@@ -1,0 +1,142 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+4\protect\vspace{1em}\\}Виртуальные методы}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Переопределение методов (overriding)}
+    \begin{lstlisting}
+struct Person {
+    string name() const { return name_; }
+    ...
+};
+struct Professor : Person {
+    string name() const { 
+        return "Prof. " + Person::name();
+    }
+    ...
+};
+    \end{lstlisting}
+
+\begin{lstlisting}
+    Professor pr("Stroustrup");
+    cout << pr.name() << endl; // Prof. Stroustrup
+    Person * p = &pr;
+    cout << p->name() << endl; // Stroustrup 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Виртуальные методы}
+    \begin{lstlisting}
+struct Person {
+    virtual string name() const { return name_; }
+    ...
+};
+struct Professor : Person {
+    string name() const { 
+        return "Prof. " + Person::name();
+    }
+    ...
+};
+    \end{lstlisting}
+
+\begin{lstlisting}
+    Professor pr("Stroustrup");
+    cout << pr.name() << endl; // Prof. Stroustrup
+    Person * p = &pr;
+    cout << p->name() << endl; // Prof. Stroustrup 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Чистые виртуальные (абстрактные) методы}
+    \begin{lstlisting}
+struct Person {
+  virtual string occupation() const = 0;
+  ...
+};
+struct Student : Person {
+  string occupation() const {return "student";}
+  ...
+};
+struct Professor : Person {
+  string occupation() const {return "professor";}
+  ...
+};
+\end{lstlisting}
+\begin{lstlisting}
+  Person * p = next_person();
+  cout << p->occupation(); 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Виртуальный деструктор}
+К чему приведёт такой код?
+    \begin{lstlisting}
+struct Person {
+    ...
+};
+struct Student : Person {
+    ...
+private:
+    string uni_;
+};
+
+int main() {
+    Person * p = new Student("Alex",21,"Oxford");
+    ...
+    delete p;
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Виртуальный деструктор}
+Правильная реализация:
+    \begin{lstlisting}
+struct Person {
+    ...
+    virtual ~Person() {}
+};
+struct Student : Person {
+    ...
+private:
+    string uni_;
+};
+
+int main() {
+    Person * p = new Student("Alex",21,"Oxford");
+    ...
+    delete p;
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Полиморфизм}
+    \begin{block}{Полиморфизм} 
+        Возможность единообразно обрабатывать разные типы данных.
+    \end{block}
+
+    \begin{block}{Перегрузка функций}
+        Выбор функции происходит в момент компиляции на основе типов аргументов
+        функции, {\em статический полиморфизм}.
+    \end{block}
+               
+    \begin{block}{Виртуальные методы}
+        Выбор метода происходит в момент выполнения на основе типа объекта, у
+        которого вызывается виртуальный метод, {\em динамический полиморфизм}. 
+    \end{block}
+\end{frame}
+
+\end{document}
+
+ 

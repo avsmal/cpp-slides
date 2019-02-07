@@ -1,0 +1,168 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+11\protect\vspace{1em}\\}Многопоточное программирование}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Асинхронное выполнение}
+Предположим, что мы хотим вычислить \texttt{doAsyncWork} асинхронно.
+\begin{lstlisting}
+int doAsyncWork();
+\end{lstlisting}
+
+В \langcpp есть два способа выполнения задач асинхронно:\medskip
+
+\fakeitem создать поток вручную \texttt{std::thread},
+   
+\begin{lstlisting}
+#include <thread>
+// создание потока, вычисляющего doAsyncWork()
+std::thread t(doAsyncWork);
+\end{lstlisting}
+
+\fakeitem использование \texttt{std::async}.
+\begin{lstlisting}
+#include <future>
+// использование std::async
+std::future<int> fut = std::async(doAsyncWork);
+int res = fut.get();
+\end{lstlisting}
+
+\texttt{std::async} может в некоторых случаях \\(зависит от планировщика) отложить выполнение\\ задачи до вызова \texttt{get} или \texttt{wait}.
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{std::async}}
+    \begin{itemize}
+        \item Имеет две стратегии выполнения: асинхронное выполнение и
+            отложенное (синхронное) выполнение.
+                \begin{enumerate}
+                    \item \texttt{std::launch::async}
+                    \item \texttt{std::launch::deferred}
+                \end{enumerate}
+        \item По умолчанию имеет стратегию:\\
+             \texttt{std::launch::async | std::launch::deferred}
+\end{itemize}
+\begin{lstlisting}
+// гарантирует асинхронное выполнение
+std::future<int> fut = 
+    std::async(std::launch::async, doAsyncWork);
+int res = fut.get();
+\end{lstlisting}
+\begin{itemize}
+        \item Отложенная задача может никогда не выполниться,\\
+            если не будет вызвано \texttt{get} или \texttt{wait}.
+
+        \item Возвращает \texttt{std::future<T>}, который\\ позволяет
+            получить возвращаемое значение.
+            
+        \item Позволяет обрабатывать исключения.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{std::thread}}
+    \begin{itemize}
+        \item Сразу же начинает вычислять переданную функцию.
+
+        \item Игнорирует возвращаемое значение функции.
+    \end{itemize}
+\begin{lstlisting}
+// переменная для возвращаемого значения
+int res = 0;
+std::thread t([&res](){res = doAsyncWork();});
+t.join();
+\end{lstlisting}    
+       
+    \begin{itemize}
+        \item Метод \texttt{join()} позволяет заблокировать текущий поток,\\ пока
+            выполнение потока не завершится.
+
+        \item Метод \texttt{detach()} позволяет отключить поток от объекта,\\
+            т.е. разорвать связь между объектом и потоком.
+
+        \item При вызове деструктора подключаемого потока программа
+            завершается, т.е. необходимо вызвать \texttt{join} или \texttt{detach}.
+
+                   
+        \item Исключения не могут покидать пределы потока.
+        
+        
+        \item \texttt{native\_handle()} возвращает дескриптор потока.
+    \end{itemize}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Синхронизация}
+    \begin{lstlisting}
+double shared = 0;	// разделяемая переменная
+std::mutex mtx; 	// мьютекс для shared
+
+void compute(int begin, int end)  {
+    for (int i = begin; i != end; ++i) {
+        double current = someFunction(i);        
+        // критическая секция
+        std::lock_guard<std::mutex> lck(mtx);
+        shared += current;        
+    }
+}
+
+int main () {
+  std::thread th1 (compute, 0,   100);
+  std::thread th2 (compute, 100, 200);
+  th1.join();
+  th2.join();
+
+  std::cout << shared << std::endl;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{std::atomic}}
+    \begin{itemize}
+        \item Шаблон \texttt{std::atomic} позволяет определить переменную,
+            операции с которой будут атомарны.
+
+        \item Определён только для целочисленных встроенных типов и указателей.
+    \end{itemize}
+
+\begin{lstlisting}
+template<class T>
+struct shared_ptr_data 
+{
+    void addref() 
+    {
+        ++counter; // atomic increment
+    }
+    
+    T * ptr;
+    std::atomic<size_t> counter;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Общие советы и замечания}
+    \begin{itemize}
+        \pitem Предпочитайте \texttt{std::async} прямому созданию потоков.
+
+        \pitem Гарантируйте неподключённость потоков на всех путях выполнения (в т.ч. при возникновении исключений).
+
+        \pitem При использовании \texttt{std::thread} следите за тем,\\ чтобы исключения не покидали функцию потока.
+
+        \pitem Используйте \texttt{std::atomic} вместо мьютекса,\\
+            когда синхронизация нужна только для одной\\ целочисленной
+            переменной.
+            
+        \pitem Делайте константные методы безопасными\\ в смысле потоков
+            (например, при кешировании).
+            
+        \pitem \code{volatile}~--- это не про многопоточность.
+    \end{itemize}
+\end{frame}
+
+\end{document}

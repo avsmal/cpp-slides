@@ -1,0 +1,98 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+5\protect\vspace{1em}\\}Ключевое слово \code{friend}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Дружественные классы}
+\begin{lstlisting}
+struct String {
+    ...
+    friend struct StringBuffer;
+private:
+    char * data_;
+    size_t len_;
+};
+
+struct StringBuffer {
+    void append(String const& s) {
+        append(s.data_);
+    }
+    void append(char const* s) {...}
+    ...
+};                   
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Дружественные функции}{}
+    Дружественные функции можно определять прямо внутри описания
+    класса (они становятся \code{inline}).
+\begin{lstlisting}
+struct String {
+    ...
+    friend std::ostream& 
+        operator<<(std::ostream & os, 
+                   String  const& s) 
+    {
+        return os << s.data_;
+    }
+
+private:
+    char * data_;
+    size_t len_;
+};                   
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Дружественные методы}
+\begin{lstlisting}
+struct String;
+struct StringBuffer {
+    void append(String const& s);
+    void append(char const* s) {...}
+    ...
+};                   
+
+struct String {
+    ...
+    friend 
+      void StringBuffer::append(String const& s);
+};
+        
+void StringBuffer::append(String const& s) {
+    append(s.data_);
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Отношение дружбы}
+    Отношение дружбы можно охарактеризовать следующими 
+    утверждениями: 
+    \begin{itemize}
+        \item Отношение дружбы не симметрично.
+        \item Отношение дружбы не транзитивно.
+        \item Отношение наследования не задаёт
+            отношение дружбы.
+        \item Отношение дружбы сильнее, чем 
+            отношение наследования. 
+    \end{itemize}
+    \begin{block}{Вывод}
+        Стоит избегать ключевого слова \code{friend}, так как оно нарушает
+        инкапсуляцию.
+    \end{block}
+\end{frame}
+
+\end{document}
+
+ 

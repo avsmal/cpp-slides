@@ -1,0 +1,228 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+7\protect\vspace{1em}\\}Пространства имён}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Пространства имён}
+    \emph{Пространства имён (namespaces)}~--- это способ разграничения областей видимости
+    имён в \langcpp.
+\medskip
+
+    \pause Имена в \langcpp:
+    \begin{enumerate}
+        \item имена переменных и констант,
+        \item имена функций,
+        \item имена структур и классов,
+        \item имена шаблонов,
+        \item синонимы типов (typedef-ы),
+        \item enum-ы и union-ы,
+        \item имена пространств имён.
+    \end{enumerate}           
+\end{frame}
+
+\begin{frame}[fragile]{Примеры}
+    В \langc для избежания конфликта имён используются префиксы.\newline
+    К примеру,  имена в библиотеке Expat начинаются с
+    \texttt{XML\_}.
+    \begin{lstlisting}
+struct XML_Parser;
+int XML_GetCurrentLineNumber(XML_Parser * parser);
+    \end{lstlisting}
+\medskip
+
+\pause В \langcpp это можно было бы записать так:
+    \begin{lstlisting}
+namespace XML {
+    struct Parser;
+    int GetCurrentLineNumber(Parser * parser);
+}    \end{lstlisting}
+
+Тогда полные имена структуры и функции будут соответственно:  \texttt{XML::Parser} и \texttt{XML::GetCurrentLineNumber}.
+\end{frame}
+
+
+\begin{frame}[fragile]{Описание пространства имён}
+\small
+    \begin{enumerate}
+        \item Пространства имён могут быть вложенными:
+    \begin{lstlisting}
+namespace items { namespace food { 
+    struct Fruit {...};
+}}
+items::food::Fruit apple("Apple");
+    \end{lstlisting}
+         \pause\item Определение пространств имён можно разделять:
+    \begin{lstlisting}
+namespace weapons { struct Bow { ... }; }
+namespace items   { 
+    struct Scroll { ... };
+    struct Artefact  { ... };  
+}
+namespace weapons { struct Sword { ... }; }
+    \end{lstlisting}
+\pause\item Классы и структуры определяют одноимённый \texttt{namespace}.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Доступ к именам}
+    \begin{enumerate}
+        \item Внутри того же \texttt{namespace} все имена доступны напрямую.
+
+        \pause\item \texttt{NS::} позволяет обратиться внутрь пространства
+            имён \texttt{NS}.
+    \begin{lstlisting}
+namespace NS { int foo() { return 0; } }
+int i = NS::foo();
+    \end{lstlisting}
+
+        \pause\item Оператор \texttt{::} позволяет обратиться к \emph{глобальному пространству имён}.
+    \begin{lstlisting}
+struct Dictionary {...};
+
+namespace items 
+{
+    struct Dictionary {...};
+
+    ::Dictionary globalDictionary;
+}
+    \end{lstlisting}
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Поиск имён}
+    \emph{Поиск имён}~--- это процесс разрешения имени.
+
+    \begin{enumerate}
+        \item Если такое имя есть в текущем \texttt{namespace}
+        \begin{itemize}
+        \item выдать
+                    \emph{все} одноимённые сущности в текущем \texttt{namespace}.
+        \item завершить поиск.
+        \end{itemize} 
+        
+        \item Если текущий \texttt{namespace}~--- глобальный
+        \begin{itemize}
+                \item завершить поиск и выдать ошибку.
+                \end{itemize}
+
+        \item Текущий \texttt{namespace} $\gets$ родительский \texttt{namespace}.
+
+        \item Перейти на шаг 1.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Поиск имён}
+    \begin{lstlisting}
+int foo(int i) { return 1; } 
+
+namespace ru 
+{
+    int foo(float f) { return 2; }
+
+    int foo(double a, double b) { return 3; }
+
+    namespace spb {
+        int global = foo(5);
+    }
+}                          
+    \end{lstlisting}
+    \medskip\textbf{Важно:} поиск продолжается до первого совпадения.\\
+    В перегрузке участвуют только найденные к этому \\моменту функции.
+\end{frame}
+
+\begin{frame}[fragile]{Ключевое слово \code{using}}
+Существуют два различных использования слова \code{using}.
+    \begin{lstlisting}
+namespace ru 
+{
+    namespace msk {
+        int foo(int i) { return 1; }
+        int bar(int i) { return -1; }
+    }
+
+    using namespace msk; // все имена из msk
+    using msk::foo;      // только msk::foo
+    
+    int foo(float f) { return 2; }
+    int foo(double a, double b) { return 3; }
+    
+    namespace spb {
+        int global = foo(5);
+    }
+}                          
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Поиск Кёнига}{}
+    \begin{lstlisting}
+namespace cg {
+    struct Vector2 {...};
+    Vector2 operator+(Vector2 a, Vector2 const& b);
+}
+    \end{lstlisting}\pause
+    \begin{lstlisting}
+    cg::Vector2 a(1,2);
+    cg::Vector2 b(3,4);
+    b = a + b; // эквивалентно: b = operator+(a, b)
+    b = cg::operator+(a, b); // OK
+    \end{lstlisting}
+\pause\medskip
+\begin{block}{Argument-dependent name lookup (ADL, Поиск Кёнига)}
+При поиске имени функции на первой фазе рассматриваются\\ имена из 
+текущего пространства имён {\em и пространств имён,\\ к которым 
+принадлежат аргументы функции}.
+\end{block}
+\end{frame}
+
+
+\begin{frame}[fragile]{Безымянный namespace}
+    Пространство имён с гарантированно уникальным именем.
+    \begin{lstlisting}
+namespace { // безымянный namespace
+    struct Test { std::string name; };
+}
+    \end{lstlisting}
+Это эквивалентно:
+    \begin{lstlisting}
+namespace $GeneratedName$ {
+    struct Test { std::string name; };
+}
+using namespace $GeneratedName$;
+    \end{lstlisting}
+
+\medskip
+Безымянные пространства имён~--- замена для \code{static}.
+\end{frame}
+
+\begin{frame}[fragile]{Заключение}
+    \begin{enumerate}
+        \pause\item Используйте пространства имён для исключения конфликта имён.
+        
+        \pause\item Помните, что поиск имён прекращается после первого совпадения.
+            Используйте \code{using} и полные имена.        
+
+        \pause\item Не используйте \code{using namespace} в заголовочных файлах.
+
+        \pause\item Всегда определяйте операторы в том же пространстве имён, что и
+            типы, для которых они определены.
+
+        \pause\item Используйте безымянные пространства имён для маленьких локальных классов и как замену слова \code{static}.
+
+        \pause\item Для длинных имён \code{namespace}-ов используйте синонимы:
+    \begin{lstlisting}
+namespace csccpp17 = ru::spb::csc::cpp17;
+    \end{lstlisting}
+    \end{enumerate}
+\end{frame}
+
+\end{document}
+
+
+

@@ -1,0 +1,130 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+1\protect\vspace{1em}\\}Зачем нужен компилятор?}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Что такое компиляция?}
+\begin{tikzpicture}[auto,thick,font=\tiny]
+    \tikzstyle{arrow} = [>=stealth',shorten >=2pt, shorten <=2pt]
+    \tikzstyle{file} = [rectangle,minimum width=7ex,minimum height=15mm,draw,thick]
+
+    \node [shift={(0mm,0mm)}] (programmer) {\includegraphics[height=1cm]{programmer}};
+    \node [file,shift={(35mm,0cm)}]  (file1) {\parbox{14mm}{Архитектура приложения}};
+    \node [file,shift={(80mm,0cm)}]  (file2) {Код на \langcpp};
+    \node [file,shift={(35mm,-3cm)}] (file3) {Машинный код};
+    \node [shift={(80mm,-3cm)}] (computer) {\includegraphics[height=1cm]{computer}};
+    \path [arrow,->] (programmer) edge node {Проектирование} (file1);
+    \path [arrow,->] (file1) edge node {Программирование}  (file2);
+    \path [arrow,->] (file3) edge node {Исполнение}        (computer);
+
+    \draw[->, arrow] (file2.south) -- ++(0,-.6) -| (file3.north);
+    \node [shift={(57mm,-12mm)}] {Компиляция};
+    
+    \node[cloud, cloud puffs=15.7, cloud ignores aspect, align=center, draw]
+        (cloud1) at (0cm, 1cm) {Идея};
+    \node[cloud, cloud puffs=15.7, cloud ignores aspect, align=center, draw]
+        (cloud2) at (80mm, -2cm) {0101};
+
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}[fragile]{Что такое компиляция?}
+\begin{tikzpicture}[auto,thick,font=\tiny]
+    \tikzstyle{arrow} = [>=stealth',shorten >=2pt, shorten <=2pt]
+    \tikzstyle{file} = [rectangle,minimum width=7ex,minimum height=15mm,draw,thick]
+
+    \node [shift={(0mm,0mm)}] (programmer) {\includegraphics[height=1cm]{programmer}};
+    \node [file,shift={(35mm,0cm)}]  (file1) {\parbox{14mm}{Архитектура приложения}};
+    \node [file,shift={(80mm,0cm)}]  (file2) {Код на \texttt{Java}};
+    \node [file,shift={(0mm,-3cm)}] (file3) {Байт код};
+    \node [cloud, draw, shift={(35mm,-3cm)},label=below:JVM] (vm) {\includegraphics[height=8mm]{computer}};
+    \node [shift={(80mm,-3cm)}] (computer) {\includegraphics[height=1cm]{computer}};
+    \path [arrow,->] (programmer) edge node {Проектирование} (file1);
+    \path [arrow,->] (file1) edge node {Программирование}  (file2);
+    
+    
+    \draw [arrow,->] (file2.south) -- ++(0,-.6) -| (file3.north);
+    \node [shift={(35mm,-12mm)}] {Компиляция};
+
+    \path [arrow,->] (file3) edge node {Исполнение}        (vm);
+    \path [arrow,<->] (vm) edge node {Трансляция команд}          (computer);
+    
+    \node[cloud, cloud puffs=15.7, cloud ignores aspect, align=center, draw]
+        (cloud1) at (0cm, 1cm) {Идея};
+    \node[cloud, cloud puffs=15.7, cloud ignores aspect, align=center, draw]
+        (cloud2) at (80mm, -2cm) {0101};
+
+\end{tikzpicture}
+\end{frame}
+
+\newcommand{\gear}[5]{%
+\foreach \i in {1,...,#1} {%
+  [rotate=(\i-1)*360/#1]  (0:#2)  arc (0:#4:#2) {%[rounded corners=1.5pt]
+               -- (#4+#5:#3)  arc (#4+#5:360/#1-#5:#3)} --  (360/#1:#2)
+               }} 
+
+\begin{frame}[fragile]{Что такое интерпретация?}
+\begin{tikzpicture}[auto,thick,font=\tiny]
+    \tikzstyle{arrow} = [auto, thick, >=stealth',shorten >=2pt, shorten <=2pt]
+    \tikzstyle{file} = [rectangle,minimum width=1cm,minimum height=15mm,draw,thick]
+
+    \node [shift={(0mm,0mm)}] (programmer) {\includegraphics[height=1cm]{programmer}};
+    \node [file,shift={(35mm,0cm)}]  (file1) {\parbox{14mm}{Архитектура приложения}};
+    \node [file,shift={(80mm,0cm)}]  (file2) {Код на \texttt{Perl}};
+    \node [shift={(35mm,-3cm)},label=below:Интерпретатор,minimum
+    height=15mm,minimum width=15mm] (perl) {Perl};
+    
+    \node [shift={(80mm,-3cm)}] (computer) {\includegraphics[height=1cm]{computer}};
+    \path [arrow,->] (programmer) edge node {Проектирование} (file1);
+    \path [arrow,->] (file1) edge node {Программирование}  (file2);
+    \path [arrow,<->] (perl)   edge node {Трансляция команд} (computer);
+
+    \draw [->, arrow] (file2.south) -- ++(0,-.6) -| (perl.north);
+    \node [shift={(57mm,-12mm)}] {Интерпретация};
+    
+    \draw [thick,shift={(35mm,-3cm)}] \gear{10}{0.6}{.7}{10}{2};
+    \draw [thick,shift={(35mm,-3cm)}] circle (.4); 
+                                     
+    \node [cloud, cloud puffs=15.7, cloud ignores aspect, align=center, draw]
+        (cloud1) at (0cm, 1cm) {Идея};
+    \node [cloud, cloud puffs=15.7, cloud ignores aspect, align=center, draw]
+        (cloud2) at (80mm, -2cm) {0101};
+
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}[fragile]{Плюсы и минусы компилируемости в машинный код}
+\vspace{-5mm}
+\begin{block}{Плюсы}
+    \begin{itemize}
+        \item эффективность: программа компилируется и оптимизируется для
+            конкретного процессора,
+        \item нет необходимости устанавливать сторонние приложения (такие как
+            интерпретатор или виртуальная машина).
+    \end{itemize}
+\end{block}
+
+\begin{block}{Минусы}
+    \begin{itemize}
+        \item нужно компилировать для каждой платформы,
+        \item сложность внесения изменения в программу~--- нужно перекомпилировать заново.
+    \end{itemize}
+\end{block}
+
+{\bf Важно:} компиляция — преобразование одностороннее, нельзя восстановить исходный код.
+\end{frame}
+
+\end{document}
+
+
+

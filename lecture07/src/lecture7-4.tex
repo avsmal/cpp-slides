@@ -1,0 +1,101 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+7\protect\vspace{1em}\\}Информации о типах времени выполнения}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Run-Time Type Information (RTTI)}
+В \langcpp этот механизм состоит из двух компонент:
+\begin{enumerate}
+    \item оператор \code{typeid} и тип \texttt{std::type\_info},
+    \item оператор \code{dynamic\_cast}.
+\end{enumerate}
+\pause
+\begin{block}{Тип {\tt type\_info}}
+    \begin{itemize}
+        \item Класс, объявленный в \texttt{<typeinfo>}.
+        \item Содержит информацию о типе.
+        \item Методы: \texttt{==, !=, name, before}.
+        \item Нет публичных конструкторов и оператора присваивания.
+        \item Можно получить ссылку на \texttt{type\_info}, соответствующий\\ значению или типу, при помощи оператора \code{typeid}.
+    \end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Использование \texttt{typeid} и {\tt type\_info}}
+    \begin{lstlisting}
+struct Unit { 
+    // наличие виртуальных методов необходимо
+    virtual ~Unit() { } 
+}; 
+
+struct Elf : Unit { };
+
+int main() {
+    Elf e;
+    Unit & ur = e;
+    Unit * up = &e;
+    cout << typeid(ur) .name() << endl; // Elf
+    cout << typeid(*up).name() << endl; // Elf
+    cout << typeid(up) .name() << endl; // Unit *
+    cout << typeid(Elf).name() << endl; // Elf
+    cout << (typeid(ur) == typeid(Elf)); // 1
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Преобразования в \langcpp: {\tt dynamic\_cast}}
+    Преобразования с проверкой типа времени выполнения.
+    \begin{lstlisting}
+Unit * u = (rand() % 2)? new Elf(): new Dwarf();
+...
+if (Elf * e = dynamic_cast<Elf *>(u))
+    ...
+else if (Dwarf * d = dynamic_cast<Dwarf *>(u))
+    ...        
+    \end{lstlisting}
+\pause    
+Особенности:
+    \begin{itemize}
+        \item Не заменяется преобразованием в стиле \langc.
+        \item Требует наличие виртуальных функций (полиморфность).
+    \end{itemize}
+\pause
+Вопросы:
+\begin{itemize}
+    \item Почему следует избегать RTTI?
+    \item Что возвращает {\tt \code{dynamic\_cast}<\code{void} *>(u)}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Пример обхода \texttt{dynamic\_cast}: double dispatch}
+\begin{lstlisting}
+struct Rectangle; struct Circle;
+
+struct Shape { 
+    virtual ~Shape() {} 
+    virtual bool intersect( Rectangle * r ) = 0;
+    virtual bool intersect( Circle    * c ) = 0;
+    virtual bool intersect( Shape     * s ) = 0;
+};
+
+struct Circle : Shape {
+    bool intersect( Rectangle * r ) { ... }
+    bool intersect( Circle    * c ) { ... }
+    bool intersect( Shape     * s ) { 
+        return s->intersect(this); 
+    }
+};
+bool intersect(Shape * a, Shape * b) { 
+    return a->intersect(b); 
+}
+\end{lstlisting}
+\end{frame}
+
+\end{document}

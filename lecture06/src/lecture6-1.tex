@@ -1,0 +1,203 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+\lstset{basicstyle=\fontsize{7pt}{1em}\ttfamily} 
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+6\protect\vspace{1em}\\}Шаблоны классов}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Проблема ``одинаковых классов''}
+\small
+\begin{minipage}{.47\textwidth}
+    \begin{lstlisting}
+struct ArrayInt {
+explicit ArrayInt(size_t size) 
+    : data_(new int[size])
+    , size_(size) {}
+
+~ArrayInt() {delete [] data_;}
+
+size_t size() const 
+{ return size_; }
+
+int operator[](size_t i) const 
+{ return data_[i]; }
+
+int & operator[](size_t i)       
+{ return data_[i]; }
+...
+private:
+    int *   data_;
+    size_t  size_;
+};
+    \end{lstlisting}
+\end{minipage}\hspace{.05\textwidth}%
+\begin{minipage}{.47\textwidth}
+    \begin{lstlisting}
+struct ArrayFlt {
+explicit ArrayFlt(size_t size) 
+    : data_(new float[size])
+    , size_(size) {}
+
+~ArrayFlt() {delete [] data_;}
+
+size_t size() const 
+{ return size_; }
+
+float operator[](size_t i) const 
+{ return data_[i]; }
+
+float & operator[](size_t i)       
+{ return data_[i]; }
+...
+private:
+    float  * data_;
+    size_t   size_;
+};
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Решение в стиле \langc: макросы}
+\small
+\begin{minipage}{.5\textwidth}
+    \begin{lstlisting}
+#define DEFINE_ARRAY(Name, Type)\
+struct Name {                   \
+explicit Name(size_t size)      \
+    : data_(new Type[size])     \
+    , size_(size) {}            \
+~Name() { delete [] data_; }    \
+                                \
+size_t size() const             \
+{ return size_; }               \
+                                \
+Type operator[](size_t i) const \
+{ return data_[i]; }            \
+Type & operator[](size_t i)     \ 
+{ return data_[i]; }            \
+...                             \
+private:                        \
+    Type *  data_;              \
+    size_t  size_;              \
+}
+    \end{lstlisting}
+\end{minipage}\hspace{.03\textwidth}%
+\begin{minipage}{.45\textwidth}
+    \begin{lstlisting}
+DEFINE_ARRAY(ArrayInt, int);
+DEFINE_ARRAY(ArrayFlt, float);
+
+int main()
+{
+    ArrayInt ai(10);
+    ArrayFlt af(20);
+    ...
+    return 0;
+}
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Решение в стиле \langcpp: шаблоны классов}
+\small
+\begin{minipage}{.5\textwidth}
+    \begin{lstlisting}
+template <class Type>
+struct Array {                               
+explicit Array(size_t size)      
+    : data_(new Type[size])     
+    , size_(size) {}                              
+~Array()                        
+{ delete [] data_; }            
+                                
+size_t size() const             
+{ return size_; }               
+                                
+Type operator[](size_t i) const 
+{ return data_[i]; }            
+Type & operator[](size_t i)      
+{ return data_[i]; }            
+...                             
+private:                        
+    Type *  data_;              
+    size_t  size_;              
+};
+    \end{lstlisting}
+\end{minipage}\hspace{.03\textwidth}%
+\begin{minipage}{.45\textwidth}
+    \begin{lstlisting}
+int main()
+{
+    Array<int> ai(10);
+    Array<float> af(20);
+    ...       
+    return 0;
+}
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны классов с несколькими параметрами}
+\small
+\begin{minipage}{.5\textwidth}
+    \begin{lstlisting}
+template <class Type, 
+          class SizeT = size_t, 
+          class CRet = Type>
+struct Array {                               
+explicit Array(SizeT size)      
+    : data_(new Type[size])     
+    , size_(size) {}                                                              
+~Array() {delete [] data_;}            
+
+SizeT size() const {return size_;}               
+CRet operator[](SizeT i) const 
+{ return data_[i]; }            
+Type & operator[](SizeT i)      
+{ return data_[i]; }            
+...                             
+private:                        
+    Type *  data_;              
+    SizeT   size_;              
+};
+    \end{lstlisting}
+\end{minipage}\hspace{.03\textwidth}%
+\begin{minipage}{.45\textwidth}
+    \begin{lstlisting}
+void foo()
+{
+    Array<int> ai(10);
+    Array<float> af(20);
+    Array<Array<int>, 
+          size_t, 
+          Array<int> const&> 
+        da(30);
+    ...
+}
+
+typedef Array<int> Ints;
+typedef Array<Ints, size_t, 
+    Ints const &> IInts;
+
+void bar()
+{
+    IInts da(30);
+}
+
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+\end{document}
+
+ 

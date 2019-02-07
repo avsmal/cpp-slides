@@ -1,0 +1,187 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+2\protect\vspace{1em}\\}Динамическая память}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+%Использование памяти в работающей программе.
+%Стек и куча.
+
+\begin{frame}[fragile]{Зачем нужна динамическая память?}
+    \begin{itemize}
+        \item Стек программы ограничен. Он не предназначен
+            для хранения больших объемов данных.
+\begin{lstlisting}
+// Не умещается на стек
+double m[10000000] = {}; // 80 Mb
+\end{lstlisting}
+
+        \item Время жизни локальных переменных ограничено
+            временем работы функции.
+
+        \item Динамическая память выделяется в сегменте данных.
+
+        \item Структура, отвечающая за выделение дополнительной
+            памяти, называется {\bf кучей} (не нужно путать
+            с одноимённой структурой данных).
+
+        \item Выделение и освобождение памяти {\em управляется вручную}.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Выделение памяти в стиле \langc}
+    \begin{itemize}
+        \item Стандартная библиотека \code{cstdlib}
+            предоставляет четыре функции для управления памятью:
+            {\small
+\begin{lstlisting}
+void * malloc (size_t size);
+void   free   (void * ptr);
+void * calloc (size_t nmemb, size_t size);
+void * realloc(void * ptr, size_t size);
+\end{lstlisting}
+}
+        \item \code{size\_t}~--- специальный целочисленный беззнаковый тип, 
+            может вместить в себя размер любого типа в байтах.
+
+        \item Тип \code{size\_t} используется для указания размеров типов данных,
+            для индексации массивов и пр.
+
+        \item \code{void *}~--- это указатель на нетипизированную память\\
+            (раньше для этого использовалось \code{char *}).
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Выделение памяти в стиле \langc}
+    \begin{itemize}
+        \item Функции для управления памятью в стиле \langc:
+            {\small
+\begin{lstlisting}
+void * malloc (size_t size);
+void * calloc (size_t nmemb, size_t size);
+void * realloc(void * ptr, size_t size);
+void   free   (void * ptr);               
+\end{lstlisting}
+}
+        \item \code{malloc}~--- выделяет область памяти размера $\ge$
+            \code{size}. Данные не инициализируются.
+
+        \item \code{calloc}~--- выделяет массив из \code{nmemb} размера 
+            \code{size}. Данные инициализируются нулём.
+
+        \item \code{realloc}~--- изменяет размер области памяти по указателю
+            \code{ptr} на \code{size} (если возможно, то это делается на месте).
+
+        \item \code{free}~--- освобождает область памяти, ранее выделенную
+            одной из функций \code{malloc}/\code{calloc}/\code{realloc}.
+            
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Выделение памяти в стиле \langc}
+    \begin{itemize}
+        \item Для указания размера типа используется оператор \code{sizeof}.
+\begin{lstlisting}
+// создание массива из 1000 int    
+int * m = (int *)malloc(1000 * sizeof(int));
+m[10] = 10;
+
+// изменение размера массива до 2000
+m = (int *)realloc(m, 2000 * sizeof(int));
+
+// освобождение массива
+free(m);
+
+// создание массива нулей
+m = (int *)calloc(3000, sizeof(int));
+
+free(m);
+m = 0;
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]{Выделение памяти в стиле \langcpp}
+    \begin{itemize}
+        \item Язык \langcpp предоставляет два набора операторов для
+            выделения памяти:
+            \begin{enumerate}
+                \item \code{new} и \code{delete}~--- для одиночных значений,
+
+                \item \code{new []} и \code{delete []}~--- для массивов.
+            \end{enumerate}
+
+        \item Версия оператора \code{delete} должна соответствовать
+            версии оператора \code{new}.
+\begin{lstlisting}
+// выделение памяти под один int со значением 5
+int * m = new int(5);
+delete m; // освобождение памяти
+
+// создание массива значений типа \code{int}
+m = new int[1000];
+delete [] m; // освобождение памяти
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Типичные проблемы при работе с памятью}
+    \begin{itemize}
+        \item Проблемы производительности: создание переменной на стеке
+            намного ``дешевле'' выделения для неё динамической памяти.
+
+        \item Проблема фрагментации: выделение большого количества
+            небольших сегментов способствует фрагментации памяти.
+        
+        \item Утечки памяти:
+\begin{lstlisting}
+// создание массива из 1000 int    
+int * m = new int[1000];
+
+// создание массива из 2000 int    
+m = new int[2000]; // утечка памяти
+
+// Не вызван delete [] m, утечка памяти
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Типичные проблемы при работе с памятью}
+    \begin{itemize}
+    \item Неправильное освобождение памяти.
+\begin{lstlisting}
+int * m1 = new int[1000];
+delete m1; // должно быть delete [] m1
+
+int * p = new int(0);
+free(p); // совмещение функций C++ и C
+
+int * q1 = (int *)malloc(sizeof(int));
+free(q1);
+free(q1); // двойное удаление
+
+int * q2 = (int *)malloc(sizeof(int));
+free(q2);
+q2 = 0;   // обнуляем указатель
+free(q2); // правильно работает для q2 = 0
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\end{document}
+
+
+\end{document}

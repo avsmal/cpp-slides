@@ -1,0 +1,137 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+4\protect\vspace{1em}\\}Наследование}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Наследование}
+Наследование — это механизм, позволяющий создавать производные классы,
+расширяя уже существующие.
+\begin{lstlisting}
+struct Person {
+    string name() const { return name_; }
+    int     age() const { return age_; }
+private:
+    string name_;
+    int age_;    
+};
+
+struct Student : Person {
+    string university() const { return uni_; }
+private:
+    string uni_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Класс-наследник}
+У объектов класса-наследника можно вызывать публичные
+методы родительского класса. 
+\begin{lstlisting}
+Student s;
+cout << s.name() << endl
+     << s.age()  << endl
+     << s.university() << endl;
+\end{lstlisting}
+Внутри объекта класса-наследника хранится экземпляр родительского
+класса.
+\begin{center}
+\begin{tikzpicture}[                                                          
+      start chain=1 going right, node distance=-0.15mm,
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=4mm, minimum height=6mm,on chain=1,draw];
+    \tikzstyle{arrow} = [>=stealth']
+    \tikzstyle{mbrace} = [decorate,decoration={brace,amplitude=5pt}];
+
+    \node[cell] (p1) {\tt name\_};
+    \node[cell] (p2) {\tt age\_};
+    \node[minimum width=1cm, on chain=1] () {};
+    \draw[mbrace] 
+       (p2.south east)--(p1.south west) node[midway,anchor=west,xshift=6pt] {};
+    \node[above of=p1, shift={(6mm,-7mm)}] () {\tt Person};
+    
+    \node[cell] (s1) {\tt name\_};
+    \node[cell] (s2) {\tt age\_};
+    \node[cell] (s3) {\tt uni\_};
+    \draw[mbrace] 
+       (s1.north west)--(s2.north east) node[midway,anchor=west,xshift=6pt] {};
+    \node[above of=s1, shift={(6mm,7mm)}] () {\tt Person};
+    \draw[mbrace] 
+       (s3.south east)--(s1.south west) node[midway,anchor=east,xshift=6pt] {};
+    \node[below of=s2, shift={(0mm,-7mm)}] () {\tt Student};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Создание/удаление объекта производного класса}
+При создании объекта производного класса сначала вызывается конструктор
+родительского класса.
+\begin{lstlisting}
+struct Person {
+    Person(string name, int age)
+        : name_(name), age_(age)
+    {}
+    ...
+};
+struct Student : Person {
+    Student(string name, int age, string uni)
+        : Person(name, age), uni_(uni)
+    {}
+    ...
+};
+\end{lstlisting}
+После деструктора {\tt Student} вызывается деструктор {\tt Person}.
+\end{frame}
+\begin{frame}[fragile]{Приведения}
+Для производных классов определены следующие приведения:
+\begin{lstlisting}
+Student s("Alex", 21, "Oxford");
+Person & l = s;  // \verb!Student & -> Person &!
+Person * r = &s; // \verb!Student * -> Person *!
+\end{lstlisting}
+Поэтому объекты класса-наследника могут присваиваться
+объектам родительского класса:
+\begin{lstlisting}
+Student s("Alex", 21, "Oxford");
+Person p = s; // \verb!Person("Alex", 21);!
+\end{lstlisting}
+При этом копируются только поля класса-родителя (срезка).
+
+(Т.е. в данном случае вызывается конструктор копирования
+{\tt Person(Person \code{const}\& p)}, который не знает про {\tt uni\_}.)
+\end{frame}
+
+\begin{frame}[fragile]{Модификатор доступа \code{protected}}
+\begin{itemize}
+    \item Класс-наследник не имеет доступа к {\tt private}-членам 
+        родительского класса.
+        
+    \item Для определения закрытых членов класса доступных наследникам
+        используется модификатор {\tt protected}.
+\begin{lstlisting}
+struct Person {
+    ...
+protected:
+    string name_;
+    int age_;    
+};
+
+struct Student : Person {
+    ... // можно менять поля name\_ и age\_
+};
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+\end{document}
+

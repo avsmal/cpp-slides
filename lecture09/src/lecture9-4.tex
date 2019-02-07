@@ -1,0 +1,210 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+9\protect\vspace{1em}\\}Итераторы и умные указатели}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Категории итераторов}
+    \emph{Итератор}~— объект для доступа к элементам
+    последовательности, синтаксически похожий на указатель.
+
+    Итераторы делятся на пять категорий. 
+    \begin{itemize}
+        \item Random access iterator: {\tt ++, \verb!--!}, арифметика, {\tt <, >, <=, >=}.\\
+        (\texttt{array, vector, deque})
+
+        \item Bidirectional iterator: {\tt ++, \verb!--!}.\\
+        (\texttt{list, set, map})
+
+        \item Forward iterator: {\tt ++}.\\
+        (\texttt{forward\_list, unordered\_set, unordered\_map})
+
+        \item Input iterator: {\tt ++}, read-only.
+
+        \item Output iterator: {\tt ++}, write-only.
+    \end{itemize}
+
+    Функции для работы с итераторами:
+\begin{lstlisting}
+    void   advance  (Iterator & it, size_t n);
+    size_t distance (Iterator f, Iterator l);
+    void   iter_swap(Iterator i, Iterator j);
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{{\tt iterator\_traits}}
+\begin{lstlisting}
+// заголовочный файл <iterator>
+template <class Iterator>
+struct iterator_traits {
+   typedef difference_type   Iterator::difference_type;
+   typedef value_type        Iterator::value_type;
+   typedef pointer           Iterator::pointer;
+   typedef reference         Iterator::reference;
+   typedef iterator_category Iterator::iterator_category;
+};
+
+template <class T>
+struct iterator_traits<T *> {
+    typedef difference_type   ptrdiff_t;
+    typedef value_type        T;
+    typedef pointer           T*;
+    typedef reference         T&;
+    typedef iterator_category 
+            random_access_iterator_tag;
+};
+\end{lstlisting}
+\end{frame}
+ 
+\begin{frame}[fragile]{{\tt iterator\_category}}
+\begin{lstlisting}
+// <iterator>
+struct random_access_iterator_tag {};
+struct bidirectional_iterator_tag {};
+struct forward_iterator_tag {};
+struct input_iterator_tag {};
+struct output_iterator_tag {};
+\end{lstlisting}
+\begin{lstlisting}
+template<class I>
+void advance_(I & i, size_t n,
+             random_access_iterator_tag) 
+{ i += n; }
+template<class I>
+void advance_(I & i, size_t n, ... ) { 
+   for (size_t k = 0; k != n; ++k, ++i );
+}
+template<class I>
+void advance(I & i, size_t n) {
+   advance_(i, n, typename 
+     iterator_traits<I>::iterator_category());
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{{\tt reverse\_iterator}}
+    У некоторых контейнеров есть обратные итераторы: 
+\begin{lstlisting}
+list<int> l = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }; 
+
+// list<int>::reverse\_iterator
+for(auto i = l.rbegin(); i != l.rend(); ++i)
+    cout << *i << endl;
+\end{lstlisting}
+
+Конвертация итераторов:
+\begin{lstlisting}
+list<int>::iterator i = l.begin();
+advance(i, 5); // i указывает на 5
+// ri указывает на 4
+list<int>::reverse_iterator ri(i); 
+i = ri.base();
+\end{lstlisting}
+
+Есть возможность сделать обратный итератор из random access\\ или bidirectional при помощи шаблона 
+\texttt{reverse\_iterator}.
+\begin{lstlisting}
+// <iterator>
+template <class Iterator> 
+class reverse_iterator {...};
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Инвалидация итераторов}
+    Некоторые операции над контейнерами делают существующие итераторы
+    некорректными (\emph{инвалидация} итераторов).
+    \bigskip
+    
+    \begin{minipage}{.8\textwidth}
+    \begin{enumerate}
+        \pitem Удаление делает некорректным итератор на удалённый элемент в любом контейнере.
+        \pitem В \texttt{vector} и \texttt{string}
+            добавление потенциально инвалидирует все итераторы (может произойти выделение нового буфера), иначе инвалидируются только итераторы на все следующие элементы.
+        \pitem В \texttt{vector} и \texttt{string} удаление элемента инвалидирует итераторы на все следующие элементы.
+        \pitem В \texttt{deque} удаление/добавление инвалидирует все итераторы, кроме 
+            случаев удаления/добавления первого или последнего элементов.
+        
+    \end{enumerate}
+    \end{minipage}
+\end{frame}
+\begin{frame}[fragile]{Advanced итераторы}
+Для пополнения контейнеров:\\
+{\tt back\_inserter, front\_inserter, inserter}.
+\begin{lstlisting}
+// в классе Database
+    template<class OutIt>
+    void findByName(string name, OutIt out);
+\end{lstlisting}
+\begin{lstlisting}
+// размер заранее неизвестен
+vector<Person> res; 
+Database::findByName("Rick", back_inserter(res));
+\end{lstlisting}
+Для работы с потоками: \\{\tt istream\_iterator, ostream\_iterator}.
+\begin{lstlisting}
+ifstream file("input.txt");
+vector<double> v((istream_iterator<double>(file)), 
+                  istream_iterator<double>());
+    
+copy(v.begin(), v.end(), 
+     ostream_iterator<double>(cout, "\n"));
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Как написать свой итератор}
+\begin{lstlisting}
+// <iterator>
+template 
+<class Category, // iterator::iterator\_category
+ class T,        // iterator::value\_type
+ class Distance = ptrdiff_t,// iterator::difference\_type
+ class Pointer = T*,        // iterator::pointer
+ class Reference = T&       // iterator::reference
+> class iterator;
+\end{lstlisting}
+
+\begin{lstlisting}
+#include <iterator>
+
+struct PersonIterator 
+    : std::iterator<forward_iterator_tag, Person>
+{
+// operator++, operator*, ... 
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Умные указатели}
+\begin{block}{\texttt{unique\_ptr}}
+\begin{itemize}
+    \item Умный указатель с уникальным владением.
+    \item Нельзя копировать, можно перемещать.
+    \item Не подходит для разделяемых объектов.
+\end{itemize}
+\end{block}
+\begin{block}{\texttt{shared\_ptr}}
+\begin{itemize}
+    \item Умный указатель с подсчётом ссылок.
+    \item Универсальный указатель.
+\end{itemize}
+\end{block}
+\begin{block}{\texttt{weak\_ptr}}
+\begin{itemize}
+    \item Умный указатель с для создания \emph{слабых ссылок}.
+    \item Работает вместе с \texttt{shared\_ptr}.
+\end{itemize}
+\end{block}
+\end{frame}
+
+\end{document}
+

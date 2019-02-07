@@ -1,0 +1,103 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+3\protect\vspace{1em}\\}Объекты и классы}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Объекты и классы}
+    \small
+    \begin{itemize}
+        \item Структуру с методами, конструкторами и деструктором
+            называют {\em классом}.
+        \item Экземпляр (значение) класса называется {\em объектом}.
+\begin{lstlisting}
+struct IntArray {
+    explicit IntArray(size_t size);
+    ~IntArray(); 
+    int & get(size_t i);
+
+    size_t size;
+    int *  data;
+};
+\end{lstlisting}
+\begin{lstlisting}
+    IntArray a(10);
+    IntArray b = {20, new int[20]}; // ошибка
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Объекты в динамической памяти}{Создание}
+Для создания объекта в динамической памяти используется оператор \code{new},
+он отвечает за вызов конструктора.
+\begin{lstlisting}
+struct IntArray {
+    explicit IntArray(size_t size);
+    ~IntArray(); 
+
+    size_t size;
+    int *  data;
+};
+\end{lstlisting}
+\begin{lstlisting}
+    // выделение памяти и создание объекта
+    IntArray * pa = new IntArray(10);
+    // только выделение памяти
+    IntArray * pb = 
+        (IntArray *)malloc(sizeof(IntArray));
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Объекты в динамической памяти}{Удаление}
+    При вызове оператора \code{delete} вызывается
+    деструктор объекта.
+\begin{lstlisting}
+    // выделение памяти и создание объекта
+    IntArray * pa = new IntArray(10);
+
+    // вызов деструктора и освобождение памяти
+    delete pa;
+\end{lstlisting}
+    Операторы \code{new []} и \code{delete []} работают аналогично
+\begin{lstlisting}
+    // выделение памяти и создание 10 объектов
+    // (вызывается конструктор по умолчанию)
+    IntArray * pa = new IntArray[10];
+
+    // вызов деструкторов и освобождение памяти
+    delete [] pa;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Placement new}{}
+\begin{lstlisting}
+// выделение памяти
+void * p = myalloc(sizeof(IntArray));
+
+// создание объекта по адресу p
+IntArray * a = new (p) IntArray(10);
+
+// явный вызов деструктора 
+a->~IntArray();
+
+// освобождение памяти
+myfree(p);
+\end{lstlisting}
+Проблемы с выравниванием:
+\begin{lstlisting}
+char b[sizeof(IntArray)];
+new (b) IntArray(20); // потенциальная проблема
+\end{lstlisting}
+\end{frame}
+\end{document}

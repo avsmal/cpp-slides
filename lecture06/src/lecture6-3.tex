@@ -1,0 +1,121 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+\lstset{basicstyle=\fontsize{7pt}{1em}\ttfamily} 
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+6\protect\vspace{1em}\\}Специализация шаблонов}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Полная специализация шаблонов: классы}
+\small
+    \begin{lstlisting}
+template<class T>
+struct Array {
+    ...
+    T *   data_;
+};
+template<>
+struct Array<bool> {
+    static int const INTBITS = 8 * sizeof(int);
+    explicit Array(size_t size)
+        : size_(size)
+        , data_(new int[size_ / INTBITS + 1])
+    {}
+    bool operator[](size_t i) const {
+        return data_[i / INTBITS] & (1 << (i % INTBITS)); 
+    }
+private:
+    size_t  size_;
+    int *  data_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Полная специализация шаблонов: функции}
+\small
+    \begin{lstlisting}
+template<class T>
+void swap(T & a, T & b) 
+{
+    T tmp(a);
+    a = b;
+    b = tmp;
+}
+
+template<>
+void swap<Database>(Database & a, Database & b) 
+{
+    a.swap(b);
+}
+
+template<class T>
+void swap(Array<T> & a, Array<T> & b) 
+{
+    a.swap(b);
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Специализация шаблонов функций и перегрузка}
+\small
+    \begin{lstlisting}
+template<class T>
+void foo(T a, T b) { 
+    cout << "same types" << endl; 
+}
+
+template<class T, class V>
+void foo(T a, V b) { 
+    cout << "different types" << endl; 
+}
+
+template<>
+void foo<int, int>(int a, int b) { 
+    cout << "both parameters are int" << endl; 
+} 
+
+int main() {
+    foo(3, 4);
+    return 0;    
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Частичная специализация шаблонов}
+\small
+    \begin{lstlisting}
+template<class T>
+struct Array {
+    T & operator[](size_t i) { return data_[i]; }
+    ...
+};
+
+template<class T>
+struct Array<T *> {
+    explicit Array(size_t size)
+        : size_(size)
+        , data_(new T *[size_])
+    {}
+    
+    T & operator[](size_t i) { return *data_[i]; }
+
+private:
+    size_t  size_;
+    T **    data_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\end{document}
+
+ 

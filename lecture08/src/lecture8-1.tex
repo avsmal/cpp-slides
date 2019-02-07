@@ -1,0 +1,303 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+8\protect\vspace{1em}\\}Стандарты \langcpp[11]/\langcpp[14]}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Стандартизация \langcpp}
+    \begin{itemize}
+        \pause\item[1983] Появление \langcpp.
+        \pause\item[1998] Первый стандарт ISO/IEC 14882:1998.
+        \pause\item[2003] Стандарт ISO/IEC 14882:2003, исправляющий недостатки стандарта \langcpp[98].
+        \pause\item[2011] Стандарт ISO/IEC 14882:2011.
+        \pause\item[2014] Стандарт ISO/IEC 14882:2014, исправляющий недостатки стандарта \langcpp[11].
+        \pause\item[2017] К концу года планируется выход нового стандарта.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Основные принципы разработки стандарта}
+    \begin{itemize}
+        \pause\item поддержка совместимости с предыдущими стандартами;
+        \pause\item улучшение техники программирования;
+        \pause\item улучшение \langcpp с точки зрения дизайна; 
+        \pause\item увеличение типобезопасности для обеспечения безопасной альтернативы для существующих опасных подходов;
+        \pause\item увеличение производительности;
+        \pause\item «не платить за то, что не используешь»;
+        \pause\item введение новых возможностей через стандартную\\ библиотеку, а~не через ядро языка;                
+        \pause\item сделать \langcpp проще для изучения\\
+        (сохраняя возможности, используемые программистами-экспертами).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Мелкие улучшения}
+\begin{enumerate}
+    \pitem Исправлена проблема с угловыми скобками: {\tt T<U<int{>}>}.
+
+    \pitem Определены понятия ``тривиальный класс'' и ``класс со стандартным размещением''.
+    
+    \pitem Ключевое слово \code{explicit} для оператора приведения типа.
+\begin{lstlisting}
+explicit operator bool () { ... }
+\end{lstlisting}
+
+    \pitem Шаблонный \code{typedef}
+\begin{lstlisting}
+template<class A, class B, int N> 
+class SomeType;
+
+template<typename B>
+using TypedefName = SomeType<double, B, 5>;
+\end{lstlisting}
+\pause
+\begin{lstlisting}
+typedef void (*OtherType)(double); 
+using OtherType = void (*)(double);
+\end{lstlisting}
+\end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]{Мелкие улучшения (продолжение)}
+\begin{enumerate} \setcounter{enumi}{4}
+    \pitem Добавлен тип \code{long long int}.
+
+    \pitem Добавлена библиотека поддержки типов: по типу на этапе компиляции можно узнавать его свойства\\ (см. заголовочный файл \texttt{<type\_traits>}).
+
+    \pitem Добавлены операторы \code{alignof} и \code{alignas}.
+\begin{lstlisting}
+alignas(float) unsigned char c[sizeof(float)];
+\end{lstlisting}
+
+    \pitem Добавлен \code{static\_assert}
+\begin{lstlisting}
+template <class T>
+void run(T * data, size_t n) {
+   static_assert(std::is_signed<T>::value, 
+                 "T is not signed.");
+}
+\end{lstlisting}
+
+%\item Внешние шаблоны.
+%\begin{lstlisting}
+%//instantiate here
+%template class std::vector<MyClass>; 
+%
+%//don't instantiate here
+%extern template class std::vector<MyClass>; 
+%\end{lstlisting}
+%    \item \code{sizeof} без содания экземпляра
+%\begin{lstlisting}
+%struct SomeType { OtherType member; };
+% 
+%sizeof(SomeType::member); //only C++11
+%\end{lstlisting}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{\code{nullptr}}
+    В язык добавлены тип \code{std::nullptr\_t} и литерал \code{nullptr}.
+
+\begin{lstlisting}          
+void foo(int a)     { ... }
+
+void foo(int * p)   { ... }
+
+void bar() 
+{
+    foo(0); // вызов foo(int a)
+    foo((int *) 0); // \langcpp[98]
+    foo(nullptr);   // \langcpp[11]
+}
+\end{lstlisting}
+\medskip
+Тип \code{std::nullptr\_t} имеет единственное \\значение \code{nullptr},
+которое неявно приводится\\ к нулевому указателю на любой тип.
+\end{frame}
+
+\begin{frame}[fragile]{Вывод типов}
+\begin{lstlisting}
+Array<Unit *> units;
+
+for(size_t i = 0; i != units.size(); ++i) {
+    // Unit *
+    auto u = units[i]; 	    
+    
+    // Array<Item> const \& 
+    decltype(u->items()) items = u->items();
+    ...
+\end{lstlisting}
+\pause
+\begin{lstlisting}
+    auto a = items[0];        // a - Item  
+    decltype(items[0]) b = a; // b - Item const \& 
+    
+    decltype(a)    c = a;     // c - Item
+    decltype((a))  d = a;     // d - Item \&
+
+    decltype(b)    e = b;     // e - Item const \&
+    decltype((b))  f = b;     // f - Item const \&
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Альтернативный синтаксис для функций}
+\begin{lstlisting}
+// RETURN\_TYPE = ?
+template <typename A, typename B> 
+RETURN_TYPE Plus(A a, B b) { return a + b; }
+\end{lstlisting}
+\begin{lstlisting}
+// некорректно, a и b определены позже
+template <typename A, typename B> 
+decltype(a + b) Plus(A a, B b) { return a + b; }
+\end{lstlisting}
+%\begin{lstlisting}
+%template <typename A, typename B> 
+%    decltype(std::declval<const A&>() + std::declval<const B&>())
+%        Plus(const A &a, const B &b) {
+%    return a + b;
+%}
+%
+\begin{lstlisting}
+// \langcpp[11]
+template <typename A, typename B> 
+auto Plus(A a, B b) -> decltype(a + b) { 
+    return a + b; 
+}
+\end{lstlisting}
+\begin{lstlisting}
+// \langcpp[14]
+template <typename A, typename B> 
+auto Plus(A a, B b) {
+    return a + b;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны с переменным числом аргументов}
+    \begin{lstlisting}
+void printf(char const *s) {
+    while (*s) {
+        if (*s == '%' && *(++s) != '%')
+            // обработать ошибку
+        std::cout << *s++;
+    }
+}
+template<typename T, typename... Args>
+void printf(char const *s, T value, Args... args) {
+    while (*s) {
+        if (*s == '%' && *(++s) != '%') {
+            std::cout << value;
+            printf(++s, args...);
+            return;
+        }
+        std::cout << *s++;
+    }
+    // обработать ошибку
+}
+\end{lstlisting}
+\end{frame}
+
+% TODO: сделать текстовый степ
+%\begin{frame}[fragile]{Наследование от списка типов}
+%\begin{lstlisting}
+%template <typename... BaseClasses> 
+%struct ClassName : BaseClasses... {
+%    ClassName (BaseClasses&&... base_classes) 
+%        : BaseClasses(base_classes)... 
+%    {}
+%};
+%\end{lstlisting}
+%
+%Можно использовать \code{sizeof...} для определения количества %параметров. 
+%\begin{lstlisting}
+%template<typename ...Args> struct SomeStruct {
+%    static const int count = sizeof...(Args);
+%};
+%\end{lstlisting}
+%\end{frame}
+
+
+\begin{frame}[fragile]{Ключевые слова \code{default} и \code{delete}}
+\begin{lstlisting}
+struct SomeType {
+    SomeType() = default; // Конструктор по умолчанию.
+    SomeType(OtherType value);
+};
+
+struct NonCopyable {
+    NonCopyable() = default;
+    NonCopyable(const NonCopyable&) = delete;
+    NonCopyable & operator=(const NonCopyable&) = delete;
+};
+\end{lstlisting}
+\pause\medskip
+Удалять можно и обычные функции.
+\begin{lstlisting}
+template<class T>
+void foo(T const * p) { ... }
+
+void foo(char const *) = delete;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Делегация конструкторов}
+    \begin{lstlisting}
+struct SomeType  {
+    SomeType(int newNumber): number(newNumber) {}
+    SomeType() : SomeType(42) {}
+private:
+    int number;
+};
+struct SomeClass {
+    SomeClass() {}
+    explicit SomeClass(int newValue): value(newValue) {}
+private:
+    int value = 5;
+};
+struct BaseClass {
+    BaseClass(int value);
+};
+struct DerivedClass : public BaseClass {
+    using BaseClass::BaseClass;
+};
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Явное переопределение и финальность}
+    \begin{lstlisting}
+struct Base {
+    virtual void update();
+    virtual void foo(int);
+    virtual void bar() const;
+};
+struct Derived : Base {
+    void updata() override;          	  // error
+    void foo(int) override;               // OK
+    virtual void foo(long) override;      // error
+    virtual void foo(int) const override; // error
+    virtual int  foo(int) override;       // error
+    virtual void bar(long);               // OK
+    virtual void bar() const final;       // OK
+};
+struct Derived2 final : Derived {
+    virtual void bar() const;       // error
+};
+struct Derived3 : Derived2 {};      // error
+    \end{lstlisting}
+\end{frame}
+
+% TODO: слайд про enum-ы
+%    \item Перечисления со строгой типизацией: 
+%\begin{lstlisting}
+%enum class Enum1 { Val1, Val2, Val3 = 100, Val4 };
+%enum class Enum2 : unsigned int { Val1, Val2i };
+%\end{lstlisting}
+
+\end{document}

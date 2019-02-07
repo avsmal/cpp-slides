@@ -1,0 +1,177 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+5\protect\vspace{1em}\\}Ключевые слова \code{static} и \code{inline}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Глобальные переменные}
+Объявление глобальной переменной:
+    \begin{lstlisting}
+extern int global;
+
+void f () {
+    ++global; 
+}
+    \end{lstlisting}
+
+Определение глобальной переменной:
+    \begin{lstlisting}
+int global = 10;
+    \end{lstlisting}
+
+Проблемы глобальных переменных:
+\begin{itemize}
+    \item Масштабируемость.
+    \item Побочные эффекты.
+    \item Порядок инициализации.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Статические глобальные переменные}
+    Статическая глобальная переменная — это глобальная переменная,
+    доступная только в пределах модуля.\\[1em]
+Определение: 
+    \begin{lstlisting}
+static int global = 10;
+
+void f () {
+    ++global; 
+}
+    \end{lstlisting}
+                
+Проблемы статических глобальных переменных:
+\begin{itemize}
+    \item Масштабируемость.
+    \item Побочные эффекты.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Статические локальные переменные}
+    Статическая локальная переменная — это глобальная переменная,
+    доступная только в пределах функции.\\[1em]
+Время жизни такой переменной~--- от первого вызова функции {\tt next}
+до конца программы.
+    \begin{lstlisting}
+int next(int start = 0) {
+    static int k = start;
+    return k++;
+}
+    \end{lstlisting}
+                
+Проблемы статических локальных переменных:
+\begin{itemize}
+    \item Масштабируемость.
+    \item Побочные эффекты.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Статические функции}
+    Статическая функция,
+    доступная только в пределах модуля.\\[1em]
+Файл {\tt 1.cpp}:
+    \begin{lstlisting}
+static void test() {
+    cout << "A\n";
+}
+    \end{lstlisting}
+Файл {\tt 2.cpp}:
+    \begin{lstlisting}
+static void test() {
+    cout << "B\n";
+}
+    \end{lstlisting}
+Статические глобальные переменные и статические функции
+проходят {\em внутреннюю линковку}.
+\end{frame}
+
+\begin{frame}[fragile]{Статические поля класса}
+    Статические поля класса — это глобальные переменные,
+    определённые внутри класса.\\[1em]
+Объявление:
+\begin{lstlisting}
+struct User {
+    ...
+private:
+    static size_t instances_;
+}; 
+\end{lstlisting}
+Определение:
+\begin{lstlisting}
+size_t User::instances_ = 0;
+\end{lstlisting}
+Для доступа к статическим полям не нужен объект.
+\end{frame}
+
+\begin{frame}[fragile]{Статические методы}
+    Статические методы — это функции, определённые внутри класса и имеющие
+    доступ к закрытым полям и методам.\\[1em]
+Объявление:
+\begin{lstlisting}
+struct User {
+    ...
+    static size_t count() { return instances_; }
+private:
+    static size_t instances_;
+}; 
+\end{lstlisting}
+Для вызова статических методов не нужен объект.
+\begin{lstlisting}
+    cout << User::count();
+\end{lstlisting}
+\end{frame}
+    
+\begin{frame}[fragile]{Ключевое слово \code{inline}}
+    Советует компилятору встроить данную функцию.
+\begin{lstlisting}
+inline double square(double x) { return x * x; }
+\end{lstlisting}
+\begin{itemize}
+    \item В месте вызова \code{inline}-функции должно 
+        быть известно её определение.
+
+    \item \code{inline} функции можно определять 
+        в заголовочных файлах.
+
+    \item Все методы, определённые внутри класса, являются
+        \code{inline}.
+
+    \item При линковке из всех версий \code{inline}-функции
+        (т.е. её код из разных единиц трансляции)
+        выбирается только одна.
+
+    \item Все определения одной и той же \code{inline}-функции
+        должны быть идентичными.
+
+    \item \code{inline} — это совет компилятору, а не указ.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Правило одного определения}
+Правило одного определения\\ (One Definition Rule, ODR)
+\begin{itemize}
+    \item В пределах любой единицы трансляции сущности не могут иметь более одного определения. 
+    \item В пределах программы глобальные переменные и не-\code{inline} функции не могут иметь больше
+        одного определения.
+    \item Классы и \code{inline} функции могут определяться в более чем одной единице
+        трансляции, но определения обязаны совпадать.
+\end{itemize}
+Вопрос: к каким проблемам могут привести разные
+определения одного класса в разных частях программы?
+\end{frame}
+\end{document}
+
+
+\end{document}
+
+ 

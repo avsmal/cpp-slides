@@ -1,0 +1,110 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+4\protect\vspace{1em}\\}Перегрузка}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Перегрузка функций}
+    В отличие от \langc в \langcpp можно определить несколько функций
+    с одинаковым именем, но разными параметрами.
+    \begin{lstlisting}
+double square(double d) { return d * d; }
+
+int    square(int    i) { return i * i; }
+    \end{lstlisting}
+    При вызове функции по имени будет произведен поиск наиболее подходящей
+    функции:
+\begin{lstlisting}
+int     a = square(4);      // square(int)
+double  b = square(3.14);   // square(double)
+double  c = square(5);      // square(int)
+int     d = square(b);      // square(double)
+float   e = square(2.71f);  // square(double)
+\end{lstlisting}
+\end{frame}
+
+    
+\begin{frame}[fragile]{Перегрузка методов}
+    \begin{lstlisting}
+struct Vector2D {
+    Vector2D(double x, double y) : x(x), y(y) {}
+
+    Vector2D mult(double d) const 
+        { return Vector2D(x * d, y * d); }
+    
+    double  mult(Vector2D const& p) const 
+        { return x * p.x + y * p.y;   }
+
+    double x, y;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+    Vector2D p(1, 2);
+    Vector2D q = p.mult(10); // (10, 20)
+    double  r  = p.mult(q);  // 50 
+\end{lstlisting}
+
+\end{frame}
+
+\begin{frame}[fragile]{Перегрузка при наследовании}
+    \begin{lstlisting}
+struct File {
+    void write(char const * s);
+    ...
+};
+
+struct FormattedFile : File {
+    void write(int i);
+    void write(double d);
+    using File::write;
+    ...
+};
+    \end{lstlisting}
+
+    \begin{lstlisting}
+    FormattedFile f;
+    f.write(4);
+    f.write("Hello");
+    \end{lstlisting}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Правила перегрузки}
+    \begin{enumerate}
+        \item Если есть точное совпадение, то используется оно.
+
+        \item Если нет функции, которая могла бы подойти с учётом преобразований,
+            выдаётся ошибка.
+
+        \item Есть функции, подходящие с учётом преобразований:
+
+            \begin{enumerate}
+                \item Расширение типов.\\
+                    \code{char, signed char, short} $\to$ \code{int}\\
+                    \code{unsigned char, unsigned short} $\to$ \code{int}/\code{unsigned int}\\
+                    \code{float} $\to$ \code{double}
+
+                \item Стандартные преобразования (числа, указатели).
+                \item Пользовательские преобразования.
+            \end{enumerate}
+            В случае нескольких параметров нужно, чтобы выбранная функция была
+            {\em строго лучше} остальных.
+    \end{enumerate}
+    {\bf NB:} перегрузка выполняется на этапе компиляции.
+\end{frame}
+\end{document}
+
+ 

@@ -1,0 +1,128 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+4\protect\vspace{1em}\\}Особенности наследования в \langcpp}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Модификаторы при наследовании}
+    При наследовании можно использовать модификаторы доступа:
+\begin{lstlisting}
+    struct A {};
+    struct B1 : public A {};
+    struct B2 : private A {};
+    struct B3 : protected A {};
+\end{lstlisting}
+Для классов, объявленных как \code{struct}, по-умолчанию используется
+\code{public}, для объявленных как \code{class}~— \code{private}.
+\vspace{3mm}
+
+{\bf Важно:} {\em отношение наследования} (в терминах ООП) задаётся только \code{public}-наследованием.
+\vspace{3mm}
+
+Использование \code{private}- и \code{protected}-наследований целесообразно,
+если необходимо не только агрегировать другой класс, но и переопределить его виртуальные методы.
+\end{frame}
+
+\begin{frame}[fragile]{Переопределение \code{private} виртуальных методов}
+    \begin{lstlisting}[basicstyle=\fontsize{9pt}{1em}\ttfamily,commentstyle=\fontsize{9pt}{1em}\ttfamily\color{MOOCGreen}]
+struct NetworkDevice {
+    void send(void * data, size_t size) {
+        log("start sending");
+        send_impl(data, size);
+        log("stop sending");
+    }
+    ...
+private:
+    virtual void send_impl(void * data, size_t size) 
+    {...}
+};
+
+struct Router : NetworkDevice {
+private:
+    void send_impl(void * data, size_t size) {...}
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Реализация чистых виртуальных методов}
+    Чистые виртуальные методы могут иметь определения:
+    \begin{lstlisting}[basicstyle=\fontsize{9pt}{1em}\ttfamily,commentstyle=\fontsize{9pt}{1em}\ttfamily\color{MOOCGreen}]
+struct NetworkDevice {
+    virtual void send(void * data, size_t size) = 0;
+    ...
+};
+
+void NetworkDevice::send(void * data, size_t size) {
+    ...
+}
+
+struct Router : NetworkDevice {
+
+    void send(void * data, size_t size) {
+        // невиртуальный вызов
+        NetworkDevice::send(data, size);
+    }
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Интерфейсы}{}
+    {\em Интерфейс}~— это абстрактный класс, у которого отсутствуют поля,
+    а все методы являются чистыми виртуальными.
+
+    \begin{lstlisting}
+struct IConvertibleToString {
+    virtual ~IConvertibleToString() {}
+    virtual string toString() const = 0;
+};
+    \end{lstlisting}
+    \begin{lstlisting}
+struct IClonable {
+    virtual ~IClonable() {}
+    virtual IClonable * clone() const = 0;
+};
+    \end{lstlisting}
+    \begin{lstlisting}
+struct Person : IClonable {
+    Person * clone() {return new Person(*this);}
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Множественное наследование}
+
+    В \langcpp разрешено множественное наследование.
+\begin{lstlisting}
+    struct Person {};
+    struct Student : Person {};
+    struct Worker  : Person {};
+    struct WorkingStudent : Student, Worker {};
+\end{lstlisting}
+    Стоит избегать {\em наследования реализаций} более чем от одного 
+    класса, вместо этого использовать интерфейсы.
+
+\begin{lstlisting}
+    struct IWorker {};
+    struct Worker : Person, IWorker {};
+    struct Student : Person {};
+    struct WorkingStudent : Student, IWorker {}
+\end{lstlisting}
+
+Множественное наследование — это отдельная большая тема.
+\end{frame}
+
+
+\end{document}
+
+ 

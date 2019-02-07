@@ -1,0 +1,174 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+2\protect\vspace{1em}\\}Строки и ввод-вывод}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Строковые литералы}
+    \begin{itemize}
+        \item Строки~--- это массивы символов
+            типа \code{char}, заканчивающиеся нулевым символом.
+\begin{lstlisting}
+// массив 'H', 'e', 'l', 'l', 'o', '\verb!\!0'
+char s[] = "Hello";
+
+\end{lstlisting}
+
+        \item Строки могут содержать управляющие последовательности:
+            \begin{enumerate}
+                \item \verb!\n!~--- перевод строки,
+                \item \verb!\t!~--- символ табуляции,
+                \item \verb!\\!~--- символ '\verb!\!',
+                \item \verb!\"!~--- символ '\verb!"!',
+                \item \verb!\0!~--- нулевой символ.
+            \end{enumerate}
+
+\begin{lstlisting}
+cout << "List:\n\t- C,\n\t- C++.\n";
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Работа со строками в стиле \langc}
+    \begin{itemize}
+        \item Библиотека \code{cstring} предлагает множество
+            функций для работы со строками (\code{char *}).
+\begin{lstlisting}
+char s1[100] = "Hello";
+cout << strlen(s1) << endl; // 5
+
+char s2[] = ", world!";
+strcat(s1, s2);
+                               
+char s3[6] = {72, 101, 108, 108, 111};
+if (strcmp(s1, s3) == 0)
+    cout << "s1 == s3" << endl;
+\end{lstlisting}
+        \item Работа со строками в стиле \langc предполагает
+            кропотливую работу с ручным выделением памяти.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Работа со строками в стиле \langcpp}
+        Библиотека \code{string} предлагает обёртку
+            над строками, которая позволяет упростить все
+            операции со строками.
+
+\small
+\begin{lstlisting}
+#include <string>
+using namespace std;
+
+int main() {
+    string s1 = "Hello";
+    cout << s1.size() << endl; // 5
+
+    string s2 = ", world!";
+    s1 = s1 + s2;
+                               
+    if (s1 == s2)
+        cout << "s1 == s2" << endl;
+    return 0;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Ввод-вывод в стиле \langc}
+    \begin{itemize}
+        \item Библиотека \code{cstdio} предлагает функции
+            для работы со стандартным вводом-выводом.
+
+        \item Для вывода используется функция {\tt printf}:
+\begin{lstlisting}
+#include <cstdio>
+
+int main() {
+    int h = 20, m = 14;
+    printf("Time: %d:%d\n", h, m);
+    printf("It's %.2f hours to midnight\n", 
+            ((24 - h) * 60.0 - m) / 60);
+    return 0;
+}
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ввод-вывод в стиле \langc}
+    \begin{itemize}
+        \item Библиотека \code{cstdio} предлагает функции
+            для работы со стандартным вводом-выводом.
+
+        \item Для ввода используется функция {\tt scanf}:
+\begin{lstlisting}
+#include <cstdio>
+
+int main() {
+    int a = 0, b = 0;
+    printf("Enter a and b: ");
+    scanf("%d %d", &a, &b);
+    printf("a + b = %d\n", (a + b));
+    return 0;
+}
+\end{lstlisting}
+    \item Ввод-вывод в стиле \langc{} достаточно сложен и
+        небезопасен (типы аргументов не проверяются).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ввод-вывод в стиле \langcpp}
+\begin{itemize}    
+    \item В \langcpp ввод-вывод реализуется через библиотеку \code{iostream}.
+    \begin{lstlisting}
+#include <string>
+#include <iostream>
+using namespace std;
+
+int main() {
+    string name;
+    cout << "Enter your name: ";
+    cin >> name; // считывается слово
+    cout << "Hi, " << name << endl;
+
+    return 0;
+}
+    \end{lstlisting}
+    \item Реализация ввода-вывода в стиле \langcpp типобезопасна.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Работа с файлами в стиле \langcpp}
+\begin{itemize}    
+    \small
+    \item Библиотека \code{fstream} обеспечивает работу с файлами.
+    \begin{lstlisting}
+#include <string>
+#include <fstream>
+using namespace std;
+
+int main() {
+    string name;
+    ifstream input("input.txt");
+    input >> name;
+
+    ofstream output("output.txt");
+    output << "Hi, " << name << endl;
+    return 0;
+}
+    \end{lstlisting}
+    \item Файлы закроются при выходе из функции.
+\end{itemize}
+\end{frame}
+
+
+\end{document}

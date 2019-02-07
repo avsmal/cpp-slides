@@ -1,0 +1,151 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+2\protect\vspace{1em}\\}Ссылки}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Недостатки указателей}
+    \begin{itemize}
+        \item Использование указателей синтаксически загрязняет код
+            и усложняет его понимание.
+            (Приходится использовать операторы \code{*} и \code{\&}.)
+
+        \item Указатели могут быть неинициализированными (некорректный код).
+
+        \item Указатель может быть нулевым (корректный код), 
+            а значит указатель нужно проверять на равенство нулю.
+
+        \item Арифметика указателей может сделать из корректного указателя
+            некорректный (легко промахнуться).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ссылки}
+    \begin{itemize}
+        \item Для того, чтобы исправить некоторые недостатки указателей,
+            в \langcpp введены ссылки.
+
+        \item Ссылки являются ``красивой обёрткой'' над указателями:
+\begin{lstlisting}
+void swap (int & a, int & b) {
+    int t = b;
+    b = a;
+    a = t;
+}
+
+int main() {
+    int k = 10, m = 20;
+    swap (k, m);
+    cout << k << ' ' << m << endl; // 20 10
+    return 0;
+}
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Различия ссылок и указателей}
+    \begin{itemize}
+        \item Ссылка не может быть неинициализированной.
+\begin{lstlisting}
+int * p; // OK
+int & l; // ошибка
+\end{lstlisting}
+
+        \item У ссылки нет нулевого значения.            
+\begin{lstlisting}
+int * p = 0; // OK
+int & l = 0; // ошибка
+\end{lstlisting}
+            
+    \item Ссылку нельзя переинициализировать.
+\begin{lstlisting}
+int a = 10, b = 20;
+int * p = &a; // p указывает на a
+p = &b;       // p указывает на b
+int & l = a;  // l ссылается на a
+l = b;        // a присваивается значение b
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Различия ссылок и указателей}
+    \begin{itemize}
+        \item Нельзя получить адрес ссылки или ссылку на ссылку.
+\begin{lstlisting}
+int a = 10;
+int * p = &a;  // p указывает на a
+int ** pp = &p;// pp указывает на переменную p
+int & l = a;   // l ссылается на a
+int * pl = &l; // pl указывает на переменную a
+int && ll = l; // ошибка
+\end{lstlisting}
+
+        \item Нельзя создавать массивы ссылок.
+\begin{lstlisting}
+int * mp[10] = {};  // массив указателей на int
+int & ml[10] = {};  // ошибка
+\end{lstlisting}
+
+        \item Для ссылок нет арифметики.
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{lvalue и rvalue}
+    \begin{itemize}
+        \item Выражения в \langcpp можно разделить на два типа:
+            \begin{enumerate}
+                \item {\bf lvalue}~--- выражения, значения которых являются
+                    {\em ссылкой} на переменную/элемент массива, 
+                    а значит могут быть указаны слева от оператора \code{=}.
+                    
+                \item {\bf rvalue}~--- выражения, значения которых являются
+                    временными и не соответствуют никакой переменной/элементу
+                    массива.
+            \end{enumerate}
+
+        \item Указатели и ссылки могут указывать только на lvalue.
+\begin{lstlisting}
+int a = 10, b = 20;
+int m[10] = {1,2,3,4,5,5,4,3,2,1};
+int & l1 = a;       // OK
+int & l2 = a + b;   // ошибка
+int & l3 = *(m + a / 2);        // OK
+int & l4 = *(m + a / 2) + 1;    // ошибка
+int & l5 = (a + b > 10) ? a : b;  // OK
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Время жизни переменной}
+    Следует следить за временем жизни переменных.
+\begin{lstlisting}
+int * foo() {
+    int a = 10;
+    return &a;
+}
+
+int & bar() {
+    int b = 20;
+    return b;
+}
+\end{lstlisting}
+\begin{lstlisting}
+    int * p = foo();
+    int & l = bar();
+\end{lstlisting}
+
+\end{frame}
+
+\end{document}

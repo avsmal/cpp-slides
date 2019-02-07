@@ -1,0 +1,170 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+7\protect\vspace{1em}\\}Преобразование в стиле \langcpp}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Преобразование в стиле \langc}{}
+В \langc этот оператор преобразует встроенные типы и указатели.
+\begin{lstlisting}
+int a = 2;
+int b = 3;
+    
+// int $\to$ double
+double size = ((double)a) / b * 100; 
+
+// double $\to$ int
+void * data = malloc(sizeof(double) * int(size));
+
+// void * $\to$ double *
+double * array = (double *)data; 
+
+// double * $\to$ char *
+char * bytes = (char *)array;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Преобразования в \langcpp: \code{static\_cast}}
+    Служит для преобразований связанных типов:
+    \begin{itemize}
+        \pitem Стандартные преобразования.
+        \begin{itemize}
+\item Преобразования числовых типов.
+\begin{lstlisting}
+double s = static_cast<double>(2) / 3 * 100; 
+s = static_cast<int>(d);
+\end{lstlisting}
+\item Указатель/ссылка на производный класс в указатель/ссылку на базовый класс.
+\item \texttt{T*} в \code{void}\texttt{*}.
+        \end{itemize}
+        \pitem Явное (пользовательское) приведение типа:
+\begin{lstlisting}
+Person p = static_cast<Person>("Ivan");
+\end{lstlisting}
+        \pitem Обратные варианты стандартных преобразований:
+            \begin{itemize}
+                %\item целочисленные типы в перечисляемые,
+                \item Указатель/ссылка на базовый класс в указатель/ссылку на производный класс (преобразование вниз, downcast),
+                %\item {\tt T Base::*} в {\tt T Derived::*},
+                \item \code{void}\texttt{*} в любой {\tt T*}.                          
+            \end{itemize}
+        \pitem Преобразование к \code{void}.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Преобразования в \langcpp: \code{const\_cast}}
+    Служит для снятия/добавления константности.\pause
+\begin{lstlisting}
+    void foo(double const& d) {
+        const_cast<double &>(d) = 10;
+    } 
+\end{lstlisting}
+Использование \code{const\_cast}~--- признак плохого дизайна.\\
+\medskip\pause
+Кроме редких исключений:
+\begin{lstlisting}
+T & operator[](size_t i) {
+    return const_cast<T &>(
+           const_cast<Vector const &>(*this)[i]);
+}
+
+T const & operator[](size_t i) const {
+    assert(i < size_);
+    return data_[i];
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Преобразования в \langcpp: \code{reinterpret\_cast}}{}
+    Служит для преобразований указателей и ссылок на несвязанные типы.\pause
+    
+\begin{lstlisting}
+void send(char const * data, size_t length);
+char * receive(size_t * length);
+\end{lstlisting}\pause
+\begin{lstlisting}
+double * m = static_cast<double*>
+                 (malloc(sizeof(double) * 100)); 
+... // инициализация m
+char * mc = reinterpret_cast<char *>(m);
+send(mc, sizeof(double) * 100);
+\end{lstlisting}\pause
+\begin{lstlisting}
+size_t length = 0;
+double * m = reinterpret_cast<double*>
+                             (receive(&length));
+length = length / sizeof(double);
+\end{lstlisting}\pause
+
+Поможет преобразовать указатель в число.
+\begin{lstlisting}
+size_t ms = reinterpret_cast<size_t>(m);
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Границы применимости преобразования в стиле \langc}{}
+  \begin{itemize}
+    \pitem Преобразования в стиле \langc может заменить любое из рассмотренных преобразований: 
+    \begin{itemize}
+        \item \code{static\_cast},
+        \item \code{reinterpret\_cast},
+        \item \code{const\_cast}.
+    \end{itemize}
+
+    \pitem Преобразования в стиле \langc можно использовать для
+    \begin{itemize}
+        \item преобразование встроенных типов,
+        \item преобразование указателей на явные типы.
+    \end{itemize}
+
+    \pitem Преобразования в стиле \langc не стоит использовать:
+    \begin{itemize}
+        \item с пользовательскими типами и указателями на них,
+        \item в шаблонах.        
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Когда преобразование в стиле \langc приводит к ошибке}{}
+\begin{lstlisting}
+// abc.h
+struct A { int a; };
+
+struct B {};
+
+struct C : A, B {};
+\end{lstlisting}
+
+\pause
+\begin{minipage}{.45\textwidth}
+\begin{lstlisting}
+#include "abc.h"
+
+C * foo(B * b) {
+    return (C *)b;
+}
+\end{lstlisting}
+
+\only<4>{\raggedright 
+Если в этой точке известны определения классов,\\ то происходит преобразование \code{static\_cast}.}
+
+\end{minipage}\pause\hfill
+\begin{minipage}{.51\textwidth}
+\begin{lstlisting}
+struct A; struct B; struct C;
+
+C * foo(B * b) {
+    return (C *)b;
+}
+\end{lstlisting}
+\only<4>{\raggedright Если известны только\\ объявления, то происходит преобразование \code{reinterpret\_cast}.}
+\end{minipage}
+
+\end{frame}
+\end{document}

@@ -1,0 +1,56 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+5\protect\vspace{1em}\\}Шаблон проектирования Singleton}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Класс Singleton}
+\begin{lstlisting}
+struct Singleton {
+    static Singleton & instance() {
+           static Singleton s;
+           return s;
+    }
+
+    Data & data() { return data_; }
+
+private:
+    Singleton() {}
+    
+    Singleton(Singleton const&);
+    Singleton& operator=(Singleton const&);
+    
+    Data data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Использование Singleton-а}{}
+\begin{lstlisting}
+    int main()
+    {
+        // первое обращение
+        Singleton & s = Singleton::instance();
+        Data d = s.data();
+
+        // аналогично d = s.data();
+        d = Singleton::instance().data();
+        return 0;    
+    }
+
+\end{lstlisting}
+\end{frame}
+\end{document}
+
+ 

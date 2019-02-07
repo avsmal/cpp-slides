@@ -1,0 +1,86 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+10\protect\vspace{1em}\\}Исключения в деструкторах и конструкторах}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Исключения в деструкторах}
+Исключения не должны покидать деструкторы.
+\begin{itemize}
+\item Двойное исключение:
+\begin{lstlisting}
+void foo() {
+    try {
+        Bad b; // исключение в деструкторе
+        bar(); // исключение
+    } catch (std::exception & e) {
+        // ...
+    }
+}
+\end{lstlisting}
+\item Неопределённое поведение:
+\begin{lstlisting}
+void bar() {
+    Bad * bad = new Bad[100];
+    // ислючение в деструкторе №20
+    delete [] bad;
+}
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Исключения в конструкторе}
+Исключения — это единственный способ
+прервать\\ конструирование объекта и сообщить об ошибке.
+
+\begin{lstlisting}
+struct Database {
+   explicit Database(string const& uri) {
+      if (!connect(uri))
+         throw ConnectionError(uri);
+   }
+   ~Database() { disconnect(); }
+   // ...
+};
+int main() {
+   try {
+      Database * db = new Database("db.local");
+      db->dump("db-local-dump.sql");
+      delete db;
+   } catch (std::exception const& e) {
+      std::cerr << e.what() << '\n';
+   }
+}
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Исключения в списке инициализации}
+Позволяет отловить исключения при создании полей класса.
+\begin{lstlisting}
+struct System 
+{
+    System(string const& uri, string const& data)
+    try : db_(uri), dh_(data)
+    {
+        // тело конструктора
+    }
+    catch (std::exception & e) 
+    {
+        log("System constructor: ", e);
+        throw;
+    }
+    
+    Database    db_;
+    DataHolder  dh_;
+};   
+\end{lstlisting}
+\end{frame}
+
+\end{document}

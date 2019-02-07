@@ -1,0 +1,100 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+3\protect\vspace{1em}\\}Методы}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Методы}
+    Метод — это функция, определённая внутри структуры.
+\small
+\begin{lstlisting}
+struct Segment {
+    Point p1;
+    Point p2;
+    double length() {
+        double dx = p1.x - p2.x;
+        double dy = p1.y - p2.y;
+        return sqrt(dx * dx + dy * dy);
+    }
+};
+int main() {
+    Segment s = { { 0.4, 1.4 }, { 1.2, 6.3 } };
+    cout << s.length() << endl;
+    return 0;
+}
+\end{lstlisting}
+\end{frame}                            
+
+\begin{frame}[fragile]{Методы}
+    Методы реализованы как функции с неявным параметром \code{this},
+    который указывает на текущий экземпляр структуры.
+\small
+\begin{lstlisting}
+struct Point 
+{
+    double x;
+    double y;
+
+    void shift(/* Point * this, */
+               double x, double y) {
+        this->x += x;
+        this->y += y;        
+    }
+};
+\end{lstlisting}
+\end{frame}                            
+
+\begin{frame}[fragile]{Методы: объявление и определение}
+    Методы можно разделять на объявление и определение:
+\begin{lstlisting}
+struct Point 
+{
+    double x;
+    double y;
+
+    void shift(double x, double y);
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+void Point::shift(double x, double y) 
+{
+    this->x += x;
+    this->y += y;        
+}
+\end{lstlisting}
+\end{frame}                            
+
+\begin{frame}[fragile]{Абстракция и инкапсуляция}
+    Использование методов позволяет объединить данные и функции для работы с ними.
+\small
+\begin{lstlisting}
+struct IntArray2D {
+    int & get(size_t i, size_t j) {
+        return data[i * b + j];        
+    }
+    size_t a;
+    size_t b;
+    int * data;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+    IntArray2D m = foo();
+    for (size_t i = 0; i != m.a; ++i )
+        for (size_t j = 0; j != m.b; ++j)
+            if (m.get(i, j) < 0) m.get(i,j) = 0;
+\end{lstlisting}
+\end{frame}
+\end{document}

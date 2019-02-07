@@ -1,0 +1,318 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+1\protect\vspace{1em}\\}Введение в синтаксис \langcpp}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Типы данных}
+\begin{itemize}
+    \item Целочисленные:
+        \begin{enumerate}
+            \item \code{char} (символьный тип данных)
+            \item \code{short int}
+            \item \code{int}
+            \item \code{long int}
+        \end{enumerate}
+    Могут быть беззнаковыми (\code{unsigned}).
+    \begin{itemize}
+        \item $-2^{n-1}\ldots (2^{n-1} - 1)$ ($n$~--- число бит)
+        \item $0\ldots (2^{n} - 1)$ для $\code{unsigned}$
+    \end{itemize}
+
+    \item Числа с плавающей точкой:
+        \begin{enumerate}
+            \item \code{float}, 4 байта, 7 значащих цифр.
+            \item \code{double}, 8 байт, 15 значащих цифр.
+        \end{enumerate}
+    \item Логический тип данных \code{bool}.
+        
+    \item Пустой тип \code{void}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Литералы}
+\begin{itemize}
+    \item Целочисленные:
+        \begin{enumerate}
+            \item \code{'a'}~--- код буквы 'a', тип \code{char},
+            \item \code{42} ~--- все целые числа по умолчанию типа \code{int},
+            \item \code{1234567890L}~--- суффикс '\code{L}' соответствует типу \code{long},
+            \item \code{1703U}~--- суффикс '\code{U}' соответствует типу \code{unsigned int},
+            \item \code{2128506UL}~--- соответствует типу \code{unsigned long}.
+        \end{enumerate}
+
+    \item Числа с плавающей точкой:
+        \begin{enumerate}
+            \item \code{3.14}~--- 
+                все числа с точкой по умолчанию типа \code{double},
+            \item \code{2.71F}~--- суффикс '\code{F}' соответствует типу 
+                \code{float},
+            \item \code{3.0E8}~--- соответствует $3.0\cdot 10^{8}$.
+        \end{enumerate}
+    \item \code{true} и \code{false}~--- значения типа \code{bool}.
+
+    \item Строки задаются в двойных кавычках: \verb!"Text string"!.
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Переменные}
+\begin{itemize}
+    \item При определении переменной указывается её тип. При определении можно
+        сразу задать начальное значение (инициализация).
+    \begin{lstlisting}
+int     i = 10;
+short   j = 20;
+bool    b = false;
+
+unsigned long l = 123123;
+
+double x = 13.5, y = 3.1415;
+float z;
+    \end{lstlisting}
+
+    \item Нужно всегда инициализировать переменные.
+
+    \item Нельзя определить переменную пустого типа \code{void}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Операции}
+\begin{minipage}{.59\textwidth}
+    \begin{itemize}
+        \item Оператор присваивания: \code{=}.
+        \item Арифметические:
+        \begin{enumerate}
+            \item бинарные: \code{+ - * / \%},
+            \item унарные:  \code{++ {-}{-}}.
+        \end{enumerate}
+        \item Логические:
+        \begin{enumerate}
+            \item бинарные:  \code{\&\& ||},
+            \item унарные:   \code{!}. 
+        \end{enumerate}
+        \item Сравнения: \code{== != > < >= <=}.
+        \item Приведения типов: \code{(type)}.
+        \item Сокращённые версии бинарных операторов:
+            \code{+= -= *= /= \%=}.
+    \end{itemize}
+\end{minipage}\hfill
+\begin{minipage}{.4\textwidth}
+\begin{lstlisting}
+int i = 10;
+i = (20 * 3) % 7;
+
+int k = i++;
+int l = --i;
+
+bool b = !(k == l);
+
+b = (a == 0) ||
+    (1 / a < 1); 
+
+double d = 3.1415;
+float f = (int)d;
+
+// d = d * (i + k)
+d *= i + k;
+\end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Инструкции}
+    \begin{itemize}
+        \item Выполнение состоит из последовательности {\em инструкций}.
+
+        \item Инструкции выполняются одна за другой.
+
+        \item Порядок вычислений внутри инструкций не определён.
+            \begin{lstlisting}
+/* unspecified behavior */
+int i = 10;
+i = (i += 5) + (i * 4); 
+            \end{lstlisting}
+        \item Блоки имеют вложенную область видимости:
+            \begin{lstlisting}
+int k = 10;                
+{   
+    int k = 5 * i;  // не видна за пределами блока
+    i = (k += 5) + 5; 
+}
+k = k + 1;
+            \end{lstlisting}
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Условные операторы}
+\begin{itemize}    
+    \item Оператор \code{if}:
+    \begin{lstlisting}
+int d = b * b - 4 * a * c;
+if ( d > 0 ) {
+    roots = 2;
+} else if ( d == 0 ){  
+    roots = 1;
+} else {
+    roots = 0;
+}
+    \end{lstlisting}
+
+    \item Тернарный условный оператор:
+    \begin{lstlisting}
+int roots = 0;
+if (d >= 0)
+    roots = (d > 0 ) ? 2 : 1;
+    \end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Циклы}
+\begin{itemize}    
+    \item Цикл \code{while}:
+    \begin{lstlisting}
+int squares = 0;
+int k = 0; 
+while ( k < 10 ) {
+    squares += k * k;
+    k = k + 1;
+} 
+    \end{lstlisting}
+
+    \item Цикл \code{for}:
+    \begin{lstlisting}
+for ( int k = 0; k < 10; k = k + 1 ) {
+    squares += k * k;
+} 
+    \end{lstlisting}
+\item Для выхода из цикла используется оператор \code{break}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Функции}
+\begin{itemize}
+    \item В сигнатуре функции указывается тип возвращаемого значений и типы параметров.
+
+    \item Ключевое слово \code{return} возвращает значение.
+    \begin{lstlisting}
+double square(double x) {
+    return x * x;
+}
+    \end{lstlisting}
+
+    \item Переменные, определённые внутри функций,~— {\em локальные}.
+    
+    \item Функция может возвращать \code{void}.
+
+    \item Параметры передаются по значению (копируются).
+
+    \begin{lstlisting}
+void strange(double x, double y) {
+    x = y;
+}
+    \end{lstlisting}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Макросы}
+\begin{itemize}
+    \item Макросами в \langcpp называют инструкции препроцессора.
+
+    \item Препроцессор \langcpp является самостоятельным языком,
+        работающим с произвольными строками.
+
+    \item Макросы можно использовать для определения функций:
+    \begin{lstlisting}
+int max1(int x, int y) { 
+    return x > y ? x : y;
+}
+
+#define max2(x, y)   x > y ? x : y
+
+a = b + max2(c, d);      //  b + c > d ? c : d;
+    \end{lstlisting}
+
+    \item Препроцессор ``не знает'' про синтаксис \langcpp.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Макросы}
+\begin{itemize}
+    \item Параметры макросов нужно оборачивать в скобки:
+    \begin{lstlisting}
+#define max3(x, y)   ((x) > (y) ? (x) : (y))
+    \end{lstlisting}
+
+    \item Это не избавляет от всех проблем:
+    \begin{lstlisting}
+int a = 1;
+int b = 1;
+int c = max3(++a, b); 
+// c = ((++a) > (b) ? (++a) : (b))
+    \end{lstlisting}
+
+    \item Определять функции через макросы~--- плохая идея.
+
+    \item Макросы можно использовать для условной компиляции:
+        \begin{lstlisting}
+#ifdef DEBUG
+    // дополнительные проверки
+#endif
+        \end{lstlisting}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ввод-вывод}
+\begin{itemize}    
+    \item Будем использовать библиотеку \code{<iostream>}.
+    \begin{lstlisting}
+#include <iostream>
+using namespace std;
+    \end{lstlisting}
+
+    \item Ввод:
+    \begin{lstlisting}
+    int a = 0;
+    int b = 0;
+    cin >> a >> b;
+    \end{lstlisting}
+
+    \item Вывод:
+    \begin{lstlisting}
+    cout << "a + b = " << (a + b) << endl;
+    \end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Простая программа}
+    \begin{lstlisting}
+#include <iostream>
+using namespace std;
+
+int main () 
+{
+    int a = 0;
+    int b = 0;
+
+    cout << "Enter a and b: ";
+    cin >> a >> b;
+
+    cout << "a + b = " << (a + b) << endl;
+
+    return 0;
+}
+    \end{lstlisting}
+\end{frame}
+\end{document}
+

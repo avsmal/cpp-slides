@@ -1,0 +1,61 @@
+%% MOOCenter presentation theme for beamer
+%%
+%% Alexander Smal <avsmal@gmail.com>, 2016
+%%
+
+\ProvidesPackage{mooc}[2013/11/26]
+\RequirePackage{cmap}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T2A]{fontenc}
+\RequirePackage[russian]{babel}
+\RequirePackage{xcolor}
+\RequirePackage{amssymb, amsmath}
+\RequirePackage{verbatim}
+\RequirePackage{tabularx}
+\RequirePackage{graphicx}
+\RequirePackage[]{listings}
+\RequirePackage{tikz}
+\RequirePackage{xspace}
+\RequirePackage[printwatermark]{xwatermark}
+\hypersetup{unicode}
+\RequirePackage{paratype}
+
+\setbeamersize{text margin left=10pt,text margin right=10pt}
+
+\usetikzlibrary{shapes.arrows,chains,decorations.pathreplacing}
+
+\author{Александр Смаль}
+
+\date{
+%   Санкт-Петербург, 2013
+}
+
+
+\definecolor{MOOCGray}{RGB}{240,240,240}
+\definecolor{MOOCBlue}{RGB}{38,57,200}
+\definecolor{MOOCGreen}{RGB}{38,130,63}
+
+\newcommand{\code}[1]{{\color{MOOCBlue}{\tt #1}}}
+
+\mode<presentation>
+{
+    \setbeamertemplate{navigation symbols}{}
+    \setbeamertemplate{footline}{}
+    \setbeamertemplate{itemize items}[circle]
+  }
+
+\lstset{extendedchars=true} 
+\lstset{language=C++, basicstyle=\small\ttfamily,  keywordstyle=\color{MOOCBlue},
+        commentstyle=\small\ttfamily\color{MOOCGreen}, showstringspaces=false,
+        extendedchars=true, texcl=true,
+        morekeywords={size_t,nullptr,static_assert,
+                      decltype,final,override,alignof,alignas, constexpr, noexcept}}
+\lstset{backgroundcolor=\color{MOOCGray}}
+
+\newcommand{\pitem}{\pause\item}
+\newcommand{\langc}{\text{C}\xspace}
+\newcommand{\langcpp}[1][]{\text{C++#1}\xspace}
+
+\newcommand{\ql}{,,\relax}
+\newcommand{\qr}{``\xspace}
+\newcommand{\myq}[1]{\ql{#1}\qr}

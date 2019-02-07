@@ -1,0 +1,181 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+8\protect\vspace{1em}\\}Семантика перемещения}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+% % % % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Излишнее копирование}
+\begin{lstlisting}
+struct String {
+    String() = default;
+    String(String const & s);
+    String & operator=(String const & s);
+    //...
+private:
+    char * data_ = nullptr;
+    size_t size_ = 0;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+String getCurrentDateString() {
+    String date;
+    // date заполняется "21 октября 2015 года"
+    return date;
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+String date = getCurrentDateString();
+\end{lstlisting}
+\end{frame}
+
+% % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Перемещающий конструктор и перемещающий~оператор присваивания}
+\begin{lstlisting}
+struct String 
+{
+    String (String && s) // \&\& - rvalue reference
+        : data_(s.data_)
+        , size_(s.size_) {
+        s.data_ = nullptr;
+        s.size_ = 0;
+    }
+    String & operator = (String && s) {
+        delete [] data_;
+        data_ = s.data_;
+        size_ = s.size_;
+        s.data_ = nullptr;
+        s.size_ = 0;
+        return *this;
+    }
+};
+\end{lstlisting}
+\end{frame}                                
+
+% % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Перемещающие методы при помощи \code{swap}}
+\begin{lstlisting}
+#include<utility>
+
+struct String 
+{
+    void swap(String & s) { 
+        std::swap(data_, s.data_);
+        std::swap(size_, s.size_);
+    }
+
+    String (String && s) { 
+        swap(s);
+    }
+    
+    String & operator = (String && s) {
+        swap(s);
+        return *this;
+    }
+};
+\end{lstlisting}
+\end{frame}
+
+% % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Использование перемещения}
+\begin{lstlisting}
+struct String {
+    String() = default;
+    String(String const & s);  // lvalue-reference
+    String & operator=(String const & s);
+    String(String && s);       // rvalue-reference
+    String & operator=(String && s);
+private:
+    char * data_ = nullptr;
+    size_t size_ = 0;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+String getCurrentDateString() {
+    String date;
+    // date заполняется "21 октября 2015 года"
+    return std::move(date);
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+String date = getCurrentDateString();
+\end{lstlisting}
+\end{frame}
+
+% % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Перегрузка с lvalue/rvalue ссылками}
+При перегрузке перемещающий метод вызывается для временных объектов
+и для явно перемещённых с помощью \texttt{std::move}.
+\begin{lstlisting}
+String a(String("Hello"));  // перемещение
+
+String b(a);                // копирование
+
+String c(std::move(b));     // перемещение
+
+a = b;                      // копирование
+
+b = std::move(c);           // перемещение
+
+c = String("world");        // перемещение
+\end{lstlisting}
+
+Это касается и обычных методов и функций, \\ которые принимают
+lvalue/rvalue-ссылки.  
+\end{frame}
+
+
+\begin{frame}[fragile]{Перемещающие особые методы}
+    \begin{itemize}
+        \item Особые методы класса:
+            \begin{itemize}
+                \item конструктор по умолчанию,
+                \item конструктор копирования,
+                \item оператор присваивания,
+                \item деструктор,
+                \item перемещающий конструктор,
+                \item перемещающий оператор присваивания.
+             \end{itemize}
+                
+        \pitem Перемещающие методы генерируются только, если в классе\\ отсутствуют пользовательские копирующие операции,\\ перемещающие операции и деструктор.
+
+        \pitem Генерация копирующих методов для классов с \\ пользовательским конструктором признана устаревшей.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Пример: {\tt unique\_ptr}}
+    \begin{lstlisting}
+#include <memory>
+#include "units.hpp"
+
+void foo(std::unique_ptr<Unit> p);
+
+std::unique_ptr<Unit> bar();
+
+int main() {
+    // p1 владеет указателем
+    std::unique_ptr<Unit> p1(new Elf());  
+
+    // теперь p2 владеет указателем
+    std::unique_ptr<Unit> p2(std::move(p1));
+    
+    p1 = std::move(p2);  // владение передаётся p1
+    
+    foo(std::move(p1));  // p1 передаётся в foo
+    
+    p2 = bar();  // std::move не нужен  
+} 
+    \end{lstlisting}
+\end{frame}
+
+\end{document}

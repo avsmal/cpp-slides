@@ -1,0 +1,134 @@
+\documentclass[aspectration=1610,t]{beamer}
+
+\usepackage{mooc}
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+10\protect\vspace{1em}\\}Спецификация исключений}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Спецификация исключений}
+Устаревшая возможность C++,
+позволяющая указать список исключений, которые могут быть выброшены из функции.
+\begin{lstlisting}
+void foo() throw(std::logic_error) {
+    if (...) throw std::logic_error();
+    if (...) throw std::runtime_error();
+}               
+\end{lstlisting}
+Если сработает второй {\tt if}, то программа аварийно завершится.
+\begin{lstlisting}
+void foo() {
+    try {
+        if (...) throw std::logic_error();
+        if (...) throw std::runtime_error();
+    } catch (std::logic_error & e) { 
+        throw e;
+    } catch (...) { 
+        terminate();
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Ключевое слово \texttt{noexcept}}
+\begin{itemize}
+    \item Используется в двух значениях:
+    \begin{itemize}
+        \item Спецификатор функции, которая не бросает исключение.
+        \item Оператор, проверяющий во время компиляции, что выражение
+            специфицированно как небросающее исключение.
+    \end{itemize}
+
+\item Если функцию со спецификацией \code{noexcept} покинет\\ 
+    исключение, то стек не обязательно будет свёрнут, \\перед тем как программа завершится.\\  
+    В отличие от аналогичной ситуации с \code{throw}\texttt{()}.
+
+\item Использование спецификации \code{noexcept} позволяет\\
+    компилятору лучше оптимизировать код, т.к. 
+    не нужно\\ заботиться о сворачивании стека.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Использование \texttt{noexcept}}
+    \begin{lstlisting}
+void no_throw() noexcept;
+void may_throw();
+
+// копирующий конструктор noexcept
+struct NoThrow { int m[100] = {}; };
+
+// копирующий конструктор noexcept(false)
+struct MayThrow { std::vector<int> v; };
+    \end{lstlisting}
+
+\begin{lstlisting}
+MayThrow mt; 
+NoThrow  nt;
+
+bool a = noexcept(may_throw());  // false
+bool b = noexcept(no_throw());   // true
+
+bool c = noexcept(MayThrow(mt)); // false
+bool d = noexcept(NoThrow(nt));  // true
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Условный \texttt{noexcept}}
+    В спецификации \texttt{noexcept} можно использовать\\
+    условные выражения времени компиляции.
+\begin{lstlisting}
+template <class T, size_t N>
+void swap(T (&a)[N], T (&b)[N]) 
+        noexcept(noexcept(swap(*a, *b)));
+
+template <class T1, class T2>
+struct pair {
+    void swap(pair & p) 
+        noexcept(noexcept(swap(first, p.first)) &&
+                 noexcept(swap(second, p.second)))
+    {
+        swap(first, p.first);
+        swap(second, p.second);
+    }
+
+    T1 first;
+    T2 second;
+};
+\end{lstlisting}
+\end{frame}
+
+% TODO: добавить задачу про declval
+
+\begin{frame}[fragile]{Зависимость от \texttt{noexcept}}
+    Проверка \code{noexcept} используется в стандартной 
+    библиотеке для обеспечения строгой гарантии безопасности исключений с помощью
+    \texttt{std::move\_if\_noexcept} (например, \texttt{vector::push\_back}).
+
+\begin{lstlisting}
+struct Bad {
+    Bad() {}
+    Bad(Bad&&);      // может бросить
+    Bad(const Bad&); // не важно
+};
+struct Good {
+    Good() {}
+    Good(Good&&) noexcept; // не бросает
+    Good(const Good&) ;    // не важно
+};
+\end{lstlisting}
+\begin{lstlisting}
+Good g1;
+Bad  b1;
+Good g2 = std::move_if_noexcept(g1); // move
+Bad  b2 = std::move_if_noexcept(b1); // copy
+\end{lstlisting}
+    
+\end{frame}
+
+\end{document}

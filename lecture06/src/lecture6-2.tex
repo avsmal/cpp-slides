@@ -1,0 +1,119 @@
+\documentclass{beamer}
+
+\usepackage{mooc}
+
+\usetikzlibrary{arrows, decorations.markings, shapes}
+\usetikzlibrary{positioning}
+\lstset{basicstyle=\fontsize{7pt}{1em}\ttfamily, commentstyle=\color{MOOCGreen}\fontsize{7pt}{1em}} 
+
+% The face style, can be changed
+
+\title{{\bf Программирование на языке \langcpp\protect\\Лекция
+6\protect\vspace{1em}\\}Шаблоны функций}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны функций: возведение в квадрат}
+\small
+    \begin{lstlisting}
+// C
+int   squarei(int   x)   { return x * x; }
+float squaref(float x)   { return x * x; }
+
+// C++
+int   square(int   x)  { return x * x; }
+float square(float x)  { return x * x; }
+
+// C++ + OOP
+struct INumber {
+    virtual  INumber * multiply(INumber * x) const = 0;
+};
+struct Int   : INumber { ... };
+struct Float : INumber { ... };
+INumber * square(INumber * x) { return x->multiply(x); }
+
+// C++ + templates
+template <typename Num>
+Num square(Num x) { return x * x; }
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны функций: сортировка}
+\small
+    \begin{lstlisting}
+// C
+void qsort(void * base, size_t nitems, size_t size, /*function*/);
+
+// C++
+void sort(int    * p,   int     * q);
+void sort(double * p,   double  * q);
+
+// C++ + OOP
+struct IComparable {
+    virtual  int compare(IComparable * comp) const = 0;
+    virtual ~IComparable() {}
+};
+void sort(IComparable ** p, IComparable ** q);
+
+// C++ + templates
+template <typename Type>
+void sort(Type * p, Type * q);
+    \end{lstlisting}
+{\bf NB}: у шаблонных функций нет параметров по умолчанию.
+\end{frame}
+
+\begin{frame}[fragile]{Вывод аргументов (deduce)}
+\small
+    \begin{lstlisting}
+template <typename Num>
+Num square(Num n) { return n * n; }
+
+template <typename Type>
+void sort(Type * p, Type * q);
+
+template <typename Type>
+void sort(Array<Type> & ar); 
+
+void foo() {
+    int a = square<int>(3);
+    int b = square(a) + square(4); // square<int>(..)
+    float * m = new float[10];
+    sort(m, m + 10);    // sort<float>(m, m + 10)
+    sort(m, &a);        // error: sort<float> vs. sort<int>
+    Array<double> ad(100);
+    sort(ad);           // sort<double>(ad)
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны методов}
+\small
+    \begin{lstlisting}
+template <class Type> 
+struct Array {
+    template<class Other>
+    Array( Array<Other> const& other )
+        : data_(new Type[other.size()])
+        , size_(other.size()) {
+        for(size_t i = 0; i != size_; ++i)
+            data_[i] = other[i];
+    }
+
+    template<class Other>
+    Array & operator=(Array<Other> const& other);
+    ...
+};
+
+template<class Type>
+template<class Other>
+Array<Type> & Array<Type>::operator=(Array<Other> const& other)
+{ ... return *this; }
+    \end{lstlisting}
+\end{frame}
+
+\end{document}
+
+ 
