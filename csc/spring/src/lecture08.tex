@@ -1,0 +1,293 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{STL: алгоритмы}
+
+\date{
+   \textbf{CS центр}\\
+   27 марта 2018 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{8pt}{0.85em}\ttfamily,  
+        keywordstyle=\fontsize{8pt}{0.85em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{8pt}{0.85em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Функторы и min/max алгоритмы}
+\begin{itemize}
+    \item \emph{Функтор}~--- класс, объекты которого ведут себя как функции,
+            т.е. имеет перегруженные \code{operator}\texttt{()}.
+    \item\emph{Предикат}~--- функтор, возвращающий \code{bool}.
+\end{itemize}
+\pause
+Функторы в стандартной библиотеке:
+\begin{itemize}
+    \item {\tt less, greater, less\_equal, greater\_equal, not\_equal\_to, equal\_to},
+    \item {\tt minus, plus, divides, modulus, multiplies},
+    \item {\tt logical\_not, logical\_and, logical\_or}
+    \item {\tt bit\_and, bit\_or, bit\_xor},
+    \item {\tt hash}.
+\end{itemize}
+\pause
+\begin{block}{Алгоритмы min/max}
+    \begin{itemize}\tt
+    \item min, max, minmax,
+    \item min\_element, max\_element, minmax\_element.
+    \end{itemize}
+\end{block}
+
+\end{frame}
+
+\begin{frame}[fragile]{Немодифицирующие алгоритмы}
+\begin{itemize}
+    \tt
+    \item all\_of, any\_of, none\_of,
+    \item for\_each,
+    \item find, find\_if, find\_if\_not, find\_first\_of,
+    \item adjacent\_find,
+    \item count, count\_if,
+    \item equal, mismatch,
+    \item is\_permutation,
+    \item lexicographical\_compare,
+    \item search, search\_n, find\_end.
+\end{itemize}    
+
+\textbf{Для упорядоченных последовательностей}
+\begin{itemize}
+    \tt
+    \item lower\_bound, upper\_bound, equal\_range,
+    \item set\_intersection, set\_difference,\\set\_union, set\_symmetric\_difference,
+    \item binary\_search, includes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Примеры}
+\begin{lstlisting}
+vector<int> v = {2,3,5,7,13,17,19};
+size_t c = count_if(v.begin(), v.end(),
+                    [](int x) {return x % 2 == 0;});
+                    
+auto it = lower_bound(v.begin(), v.end(), 11);
+
+bool has7 = binary_search(v.begin(), v.end(), 7);
+\end{lstlisting}
+\begin{lstlisting}
+vector<string> & db = getNames();
+
+for_each(db.begin(), db.begin() + db.size() / 2, 
+        [](string & s){cout << s << "\n";});
+
+auto w = find(db.begin(), db.end(), "Waldo");
+
+string agents[3] = {"Alice", "Bob", "Eve"};
+auto it = find_first_of(db.begin(), db.end(),
+                        agents, agents + 3);
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Модифицирующие алгоритмы}
+\begin{itemize}
+    \tt
+    \item fill, fill\_n, generate, generate\_n,
+    \item random\_shuffle, shuffle,
+    \item copy, copy\_n, copy\_if, copy\_backward,
+    \item move, move\_backward,
+    \item remove, remove\_if, remove\_copy, remove\_copy\_if,
+    \item replace, replace\_if, replace\_copy, replace\_copy\_if,
+    \item reverse, reverse\_copy,
+    \item rotate, rotate\_copy,
+    \item swap\_ranges,  
+    \item transform,
+    \item unique, unique\_copy,
+    \item[\textbf{\textasteriskcentered}] accumulate, adjacent\_difference,\\ inner\_product, partial\_sum, iota.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Примеры}
+\begin{lstlisting}
+// случайныe
+vector<int> a(100); 
+generate(a.begin(), a.end(), [](){return rand() % 100;});
+
+// 0,1,2,3,...
+vector<int> b(a.size()); 
+iota(b.begin(), b.end(), 0);
+
+// c[i] = a[i] * b[i]
+vector<int> c(b.size()); 
+transform(a.begin(), a.end(), b.begin(), 
+          c.begin(), multiplies<int>());
+
+// c[i] *= 2 
+transform(c.begin(), c.end(), c.begin(), 
+          [](int x) {return x * 2;});
+
+// сумма c[i]
+int sum = accumulate(c.begin(), c.end(), 0);
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Удаление элементов из последовательности}
+\begin{lstlisting}
+vector<int> v = {2,5,1,5,8,5,2,5,8};
+remove(v.begin(), v.end(), 5);
+\end{lstlisting}
+Как изменится \texttt{v.size()}?\quad \only<2->{Не изменится.}\\ 
+Какое содержимое вектора \texttt{v}?\quad \only<2->{\texttt{\{2,1,8,2,8,5,2,5,8\}}}
+\pause\pause\\\medskip
+Удаление элемента по значению:
+\begin{lstlisting}
+vector<int> v = {2,5,1,5,8,5,2,5,8};
+v.erase(remove(v.begin(), v.end(), 5), v.end());
+\end{lstlisting}
+\begin{lstlisting}
+list<int> l = {2,5,1,5,8,5,2,5,8};
+l.remove(5);
+\end{lstlisting}
+\pause
+Удаление одинаковых элементов:
+\begin{lstlisting}
+vector<int> v = {1,2,2,2,3,4,5,5,5,6,7,8,9};
+v.erase(unique(v.begin(), v.end()), v.end());
+\end{lstlisting}
+\begin{lstlisting}
+list<int> l = {1,2,2,2,3,4,5,5,5,6,7,8,9};
+l.unique();
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Удаление из ассоциативных контейнеров}
+Неправильный вариант
+\begin{lstlisting}
+map<string, int> m;
+for (auto it = m.begin(); it != m.end(); ++it)
+    if (it->second == 0)
+        m.erase(it);
+\end{lstlisting}
+\pause
+Правильный вариант
+\begin{lstlisting}
+for (auto it = m.begin() ; it != m.end(); )
+    if (it->second == 0) 
+        it = m.erase(it);
+    else
+        ++it;
+\end{lstlisting}
+\pause
+Альтернативный вариант (для старого стандарта)
+\begin{lstlisting}
+for (map<string,int>::iterator it = m.begin(); it != m.end(); )
+    if (it->second == 0) 
+        m.erase(it++);
+    else                 
+        ++it;
+\end{lstlisting}
+\end{frame}
+
+% TODO:: сделать из этого текстовый степ
+\begin{frame}[fragile]{Модифицирующие алгоритмы: предикаты}
+\begin{lstlisting}
+struct ElementN 
+{
+    ElementN(size_t n) : n(n), i(0) {}
+
+    template<class T>
+    bool operator()(T const& t) 
+    { 
+        return (++i == n); 
+    }
+    
+    size_t n;
+    size_t i;
+};
+
+vector<int> v = {0,1,2,3,4,5,6,7,8,9,10};
+
+v.erase(remove_if(v.begin(), v.end(), ElementN(3)), v.end());
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Модифицирующие алгоритмы: предикаты}
+\begin{lstlisting}
+template<class Iterator, class Pred>
+Iterator remove_if(Iterator p, Iterator q, Pred pred) {
+    Iterator s = find_if(p, q, pred);
+    if (s == q)
+        return q;
+
+    Iterator out = s++;
+    return remove_copy_if(s, q, out, pred);
+}    
+
+template<class Iterator, class OutIterator, class Pred>
+Iterator remove_copy_if(Iterator p, Iterator q, 
+                        OutIterator out, Pred pred) {
+    for (; p != q; ++p)
+        if (!pred(*p))
+            *out++ = *p;
+    return out;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Сортировка}
+\begin{itemize}
+    \tt
+    \item is\_sorted, is\_sorted\_until,
+    \item sort, stable\_sort,
+    \item nth\_element, partial\_sort,
+    \item merge, inplace\_merge,
+    \item partition, stable\_partition, is\_partitioned, partition\_copy, partition\_point.
+\end{itemize}
+\pause
+\begin{lstlisting}
+vector<int> v = randomVector<int>();
+
+auto med = v.begin() + v.size() / 2;
+nth_element(v.begin(), med, v.end());
+cout << "Median: " << *med;
+
+auto m = partition(v.begin(), v.end(), 
+         [](int x){return x % 2 == 0;});
+sort(v.begin(), m);
+v.erase(m, v.end());        
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Что есть ещё?}
+\begin{itemize}
+    \item Операции с кучей:
+        \begin{itemize}
+            \tt 
+            \item push\_heap, 
+            \item pop\_heap, 
+            \item make\_heap, 
+            \item sort\_heap
+            \item is\_heap,
+            \item is\_heap\_until.
+            
+        \end{itemize}
+    \item Операции с неинициализированными интервалами:
+        \begin{itemize}
+            \tt
+            \item raw\_storage\_iterator,
+            \item uninitialized\_copy,
+            \item uninitialized\_fill,
+            \item uninitialized\_fill\_n.
+        \end{itemize}
+    \item Операции с перестановками
+        \begin{itemize}
+            \tt 
+            \item next\_permutation,
+            \item prev\_permutation.
+        \end{itemize}
+\end{itemize}
+\end{frame}
+
+\end{document}

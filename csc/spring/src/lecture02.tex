@@ -1,0 +1,318 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Нововведения \langcpp 11/\langcpp 14}
+
+\date{
+   \textbf{CS центр}\\
+   20 февраля 2018 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{8pt}{0.9em}\ttfamily,  
+        keywordstyle=\fontsize{8pt}{0.9em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{8pt}{0.9em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+
+\begin{frame}[fragile]{Стандартизация \langcpp}
+    \begin{itemize}
+        \pause\item[1983] Появление \langcpp.
+        \pause\item[1998] Первый стандарт ISO/IEC 14882:1998.
+        \pause\item[2003] Стандарт ISO/IEC 14882:2003, исправляющий недостатки стандарта \langcpp[98].
+        \pause\item[2011] Стандарт ISO/IEC 14882:2011.
+        \pause\item[2014] Стандарт ISO/IEC 14882:2014, исправляющий недостатки стандарта \langcpp[11].
+        \pause\item[2017] В конце года опубликован стандарт \langcpp[17].
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Основные принципы разработки стандарта}
+    \begin{itemize}
+        \pause\item поддержка совместимости с предыдущими стандартами;
+        \pause\item улучшение техники программирования;
+        \pause\item улучшение \langcpp с точки зрения дизайна; 
+        \pause\item увеличение типобезопасности для обеспечения безопасной альтернативы для существующих опасных подходов;
+        \pause\item увеличение производительности;
+        \pause\item «не платить за то, что не используешь»;
+        \pause\item введение новых возможностей через стандартную\\ библиотеку, а~не через ядро языка;                
+        \pause\item сделать \langcpp проще для изучения\\
+        (сохраняя возможности, используемые программистами-экспертами).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Мелкие улучшения}
+\begin{enumerate}
+    \pitem Исправлена проблема с угловыми скобками: {\tt T<U<int{>}>}.
+
+    \pitem Определены понятия ``тривиальный класс'' и ``класс со стандартным размещением''.
+    
+    \pitem Ключевое слово \code{explicit} для оператора приведения типа.
+\begin{lstlisting}
+explicit operator bool () { ... }
+\end{lstlisting}
+
+    \pitem Шаблонный \code{typedef}
+\begin{lstlisting}
+template<class A, class B, int N> 
+class SomeType;
+
+template<typename B>
+using TypedefName = SomeType<double, B, 5>;
+\end{lstlisting}
+\pause
+\begin{lstlisting}
+typedef void (*OtherType)(double); 
+using OtherType = void (*)(double);
+\end{lstlisting}
+\end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]{Мелкие улучшения (продолжение)}
+\begin{enumerate} \setcounter{enumi}{4}
+    \pitem Добавлен тип \code{long long int}.
+
+    \pitem Добавлена библиотека поддержки типов: по типу на этапе компиляции можно узнавать его свойства\\ (см. заголовочный файл \texttt{<type\_traits>}).
+
+    \pitem Добавлены операторы \code{alignof} и \code{alignas}.
+\begin{lstlisting}
+alignas(float) unsigned char c[sizeof(float)];
+\end{lstlisting}
+
+    \pitem Добавлен \code{static\_assert}
+\begin{lstlisting}
+template <class T>
+void run(T * data, size_t n) {
+   static_assert(std::is_signed<T>::value, 
+                 "T is not signed.");
+}
+\end{lstlisting}
+
+%\item Внешние шаблоны.
+%\begin{lstlisting}
+%//instantiate here
+%template class std::vector<MyClass>; 
+%
+%//don't instantiate here
+%extern template class std::vector<MyClass>; 
+%\end{lstlisting}
+%    \item \code{sizeof} без содания экземпляра
+%\begin{lstlisting}
+%struct SomeType { OtherType member; };
+% 
+%sizeof(SomeType::member); //only C++11
+%\end{lstlisting}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{\code{nullptr}}
+    В язык добавлены тип \code{std::nullptr\_t} и литерал \code{nullptr}.
+
+\begin{lstlisting}          
+void foo(int a)     { ... }
+
+void foo(int * p)   { ... }
+
+void bar() 
+{
+    foo(0); // вызов foo(int a)
+    foo((int *) 0); // \langcpp[98]
+    foo(nullptr);   // \langcpp[11]
+}
+\end{lstlisting}
+\medskip
+Тип \code{std::nullptr\_t} имеет единственное значение \code{nullptr},
+которое неявно приводится к нулевому указателю\\ на любой тип.
+\end{frame}
+
+\begin{frame}[fragile]{Вывод типов}
+\begin{lstlisting}
+Array<Unit *> units;
+
+for(size_t i = 0; i != units.size(); ++i) {
+    // Unit *
+    auto u = units[i]; 	    
+    
+    // Array<Item> const \& 
+    decltype(u->items()) items = u->items();
+    ...
+\end{lstlisting}
+\pause
+\begin{lstlisting}
+    auto a = items[0];        // a - Item  
+    decltype(items[0]) b = a; // b - Item const \& 
+    
+    decltype(a)    c = a;     // c - Item
+    decltype((a))  d = a;     // d - Item \&
+
+    decltype(b)    e = b;     // e - Item const \&
+    decltype((b))  f = b;     // f - Item const \&
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Альтернативный синтаксис для функций}
+\begin{lstlisting}
+// RETURN\_TYPE = ?
+template <typename A, typename B> 
+RETURN_TYPE Plus(A a, B b) { return a + b; }
+\end{lstlisting}
+\begin{lstlisting}
+// некорректно, a и b определены позже
+template <typename A, typename B> 
+decltype(a + b) Plus(A a, B b) { return a + b; }
+\end{lstlisting}
+%\begin{lstlisting}
+%template <typename A, typename B> 
+%    decltype(std::declval<const A&>() + std::declval<const B&>())
+%        Plus(const A &a, const B &b) {
+%    return a + b;
+%}
+%
+\begin{lstlisting}
+// \langcpp[11]
+template <typename A, typename B> 
+auto Plus(A a, B b) -> decltype(a + b) { 
+    return a + b; 
+}
+\end{lstlisting}
+\begin{lstlisting}
+// \langcpp[14]
+template <typename A, typename B> 
+auto Plus(A a, B b) {
+    return a + b;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны с переменным числом аргументов}
+    \begin{lstlisting}
+void printf(char const *s) {
+    while (*s) {
+        if (*s == '%' && *(++s) != '%')
+            // обработать ошибку
+        std::cout << *s++;
+    }
+}
+template<typename T, typename... Args>
+void printf(char const *s, T value, Args... args) {
+    while (*s) {
+        if (*s == '%' && *(++s) != '%') {
+            std::cout << value;
+            printf(++s, args...);
+            return;
+        }
+        std::cout << *s++;
+    }
+    // обработать ошибку
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Кортежи}
+\begin{lstlisting}
+std::tuple<std::string, int, int> getUnitInfo(int id) {
+    if (id == 0) return std::make_tuple("Elf",	 60, 9);
+    if (id == 1) return std::make_tuple("Dwarf", 80, 6);
+    if (id == 2) return std::make_tuple("Orc", 	 90, 3);
+    //...
+}
+int main() {
+    auto ui0 = getUnitInfo(0);
+    std::cout << "race: "<< std::get<0>(ui0) << ", "
+              << "hp: "  << std::get<1>(ui0) << ", "
+              << "iq: "  << std::get<2>(ui0) << "\n";
+    
+    std::string race1; int hp1; int iq1;
+    std::tie(race1, hp1, iq1) = getUnitInfo(1);
+    std::cout << "race: " << race1 << ", "
+              << "hp:   " << hp1   << ", "
+              << "iq:   " << iq1   << "\n";
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{{\tt std::function}}
+Универсальный класс для хранения указателей на функции,\\
+указателей на методы и функциональных объектов.
+\begin{lstlisting}
+int mult (int x, int y) { return x * y; }
+
+struct IntDiv { 
+    int operator()(int x, int y) const { 
+        return x / y; 
+    } 
+};
+\end{lstlisting}
+\begin{lstlisting}
+std::function<int (int, int)> op; 
+if ( OP == '*' )
+    op = &mult;
+else if ( OP == '/')
+    op = IntDiv();
+int result = op(7,8);
+\end{lstlisting}
+                  
+Позволяет работать и с указателями на методы.
+\end{frame}
+
+\begin{frame}[fragile]{Лямбда-выражения}
+\begin{lstlisting}
+std::function<int (int, int)> op = 
+    [](int x, int y) { return x / y; } // IntDiv
+
+// то же, но с указанием типа возвращаемого значения
+op = [](int x, int y) -> int { return x / y; }
+
+// С++14
+op = [](auto x, auto y) { return x / y; } 
+\end{lstlisting}
+
+Можно захватывать \emph{локальные} переменные.
+\begin{lstlisting}
+// захват по ссылке
+int total = 0;
+auto addToTotal = [&total](int x) { total += x; };
+
+// захват по значению
+auto subTotal = [total](int & x) { x -= total ; };
+
+// Можно захватывать this
+auto callUpdate = [this](){ this->update(); };
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Различные виды захвата}
+Могут быть разные типы захвата, в т.ч. смешанные: 
+\verb![], [x, &y], [&], [=], [&, x], [=, &z]!\\
+\medskip
+Определение переменных \verb![x = std::move(y)]! (\langcpp[14]).
+\medskip
+
+Не стоит использовать захват по умолчанию \verb![&]! или \verb![=]!.
+\begin{lstlisting}
+std::function<bool(int)> getFilter(Checker const& c) {
+    auto d  = c.getModulo();
+    // захватывает ссылку на локальную переменную
+    return [&] (int i) { return i % d == 0; }
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+struct Checker {
+    std::function<bool(int)> getFilter() const {
+        // захватывает this, а не d
+        return [=] (int x) { return x % d == 0; }
+    }
+    int d;
+};
+\end{lstlisting}
+\end{frame}
+
+\end{document}
+
+

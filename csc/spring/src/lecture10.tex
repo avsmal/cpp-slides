@@ -1,0 +1,380 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Гарантии безопасности исключений}
+
+\date{
+   \textbf{CS центр}\\
+   17 апреля 2018 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{8pt}{0.85em}\ttfamily,  
+        keywordstyle=\fontsize{8pt}{0.85em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{8pt}{0.85em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+\newcommand{\fakeitem}{{\color{MOOCBlue}\textbullet}\ \ }
+
+
+
+\begin{frame}[fragile]{Гарантии безопасности исключений}
+    \begin{block}{Гарантия отсутствия исключений}
+            “Ни при каких обстоятельствах функция  не будет генерировать исключения”.
+    \end{block}\pause
+    
+    \begin{block}{Базовая гарантия}
+            “При возникновении любого исключения 
+            состояние программы останется
+            согласованным”.
+    \end{block}\pause
+
+    \begin{block}{Строгая гарантия}
+            “Если при выполнении операции возникнет исключение,  
+            то программа останется том же в состоянии,  которое было до начала выполнения
+            операции”.
+    \end{block}
+\end{frame}
+\begin{frame}[fragile]{Строгая гарантия безопасности исключений}
+    \begin{itemize}
+        \pitem В каком случае мы не можем обеспечить строгую 
+        гарантию безопасности исключений?
+            
+            \pause \medskip
+            \emph{При наличии взаимодействия со внешним окружением.}
+            \medskip\pause
+        
+        \item Как обеспечить строгую гарантию безопасности исключений  в остальных случаях?
+            
+            \pause \medskip
+            \emph{Выполнять операцию над копией состояния программы.  Если операция прошла успешно, заменить состояние на копию.}
+            \medskip\pause
+            
+        \item Когда можно обеспечить строгую гарантию {\em эффективно}?
+        
+            \pause \medskip
+            \emph{Это вопрос архитектуры приложения.}
+            
+    \end{itemize}
+\end{frame}
+\begin{frame}[fragile]{Как добиться строгой гарантии?}
+    \begin{lstlisting}
+template<class T>
+struct Array 
+{
+    void resize(size_t n) 
+    {
+        T * ndata = new T[n];
+        for (size_t i = 0; i != n && i != size_; ++i)
+            ndata[i] = data_[i];
+
+        delete [] data_;
+        data_ = ndata;
+        size_ = n;    
+    }
+
+    T *     data_;
+    size_t  size_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Как добиться строгой гарантии: вручную}
+    \begin{lstlisting}
+template<class T> 
+struct Array 
+{
+    void resize(size_t n) 
+    {
+        T * ndata = new T[n];
+        try { 
+            for (size_t i = 0; i != n && i != size_; ++i)
+                ndata[i] = data_[i];
+        } catch (...) { 
+            delete [] ndata;
+            throw;
+        }
+        delete [] data_;
+        data_ = ndata;
+        size_ = n;    
+    }
+    
+    T *     data_;
+    size_t  size_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Как добиться строгой гарантии: RAII}
+\begin{lstlisting}
+template<class T>
+struct Array 
+{
+    void resize(size_t n) 
+    {
+        unique_ptr<T[]> ndata(new T[n]);
+
+        for (size_t i = 0; i != n && i != size_; ++i)
+            ndata[i] = data_[i];
+
+        data_ = std::move(ndata);
+        size_ = n;    
+    }
+
+    unique_ptr<T[]> data_;
+    size_t          size_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Как добиться строгой гарантии: \texttt{swap}}
+\begin{lstlisting}
+template<class T>
+struct Array 
+{
+    void resize(size_t n) 
+    {
+        Array t(n);
+        for (size_t i = 0; i != n && i != size_; ++i)
+            t[i] = data_[i];
+
+        t.swap(*this);
+    }
+
+    T       * data_;
+    size_t    size_;
+};
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Проектирование с учётом исключений}
+    Рассмотрим традиционный интерфейс стека:
+\begin{lstlisting}
+template<class T> 
+struct Stack 
+{
+    void push(T const& t) 
+    { 
+        data_.push_back(t); 
+    }
+
+    T pop() 
+    {
+        T tmp = data_.back();
+        data_.pop_back();
+        return tmp;
+    }
+
+    std::vector<T> data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Проектирование с учётом исключений}
+    Рассмотрим традиционный интерфейс стека:
+\begin{lstlisting}
+template<class T> 
+struct Stack 
+{
+    void push(T const& t) 
+    { 
+        data_.push_back(t); 
+    }
+
+    void pop(T & res) 
+    {
+        res = data_.back();
+        data_.pop_back();
+    }
+
+    std::vector<T> data_;
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Использование {\tt unique\_ptr}}
+\begin{lstlisting}
+template<class T> 
+struct Stack 
+{
+    void push(T const& t) 
+    { 
+        data_.push_back(t); 
+    }
+
+    unique_ptr<T> pop() 
+    {
+        unique_ptr<T> tmp(new T(data_.back()));
+        data_.pop_back();
+        return tmp;
+    }
+
+    std::vector<T> data_;
+};
+\end{lstlisting}
+\end{frame}
+
+
+%\begin{frame}[fragile]{Проблемы с порядком операций}
+%    Следите за порядком операций:
+%\begin{lstlisting}
+%void foo(unique_ptr<T> p, unique_ptr<V> q);
+%\end{lstlisting}
+%
+%\begin{lstlisting}
+%// потенциальный memory leak
+%foo(unique_ptr<T>(new T()), unique_ptr<V>(new V()));
+%
+%// всё корректно
+%unique_ptr<T> p(new T());
+%foo(std::move(p), unique_ptr<V>(new V()));
+%
+%// корректно в C++14
+%foo(make_unique<T>(), make_unique<V>());
+%\end{lstlisting}
+%\end{frame}
+
+
+\begin{frame}[fragile]{Спецификация исключений}
+Устаревшая возможность C++,
+позволяющая указать список исключений, которые могут быть выброшены из функции.
+\begin{lstlisting}
+void foo() throw(std::logic_error) {
+    if (...) throw std::logic_error();
+    if (...) throw std::runtime_error();
+}               
+\end{lstlisting}
+Если сработает второй {\tt if}, то программа аварийно завершится.
+\begin{lstlisting}
+void foo() {
+    try {
+        if (...) throw std::logic_error();
+        if (...) throw std::runtime_error();
+    } catch (std::logic_error & e) { 
+        throw e;
+    } catch (...) { 
+        terminate();
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Ключевое слово \texttt{noexcept}}
+\begin{itemize}
+    \item Используется в двух значениях:
+    \begin{itemize}
+        \item Спецификатор функции, которая не бросает исключение.
+        \item Оператор, проверяющий во время компиляции, что выражение
+            специфицированно как небросающее исключение.
+    \end{itemize}
+
+\item Если функцию со спецификацией \code{noexcept} покинет  
+    исключение, то стек не обязательно будет свёрнут,  перед тем как программа завершится.   
+    В отличие от аналогичной ситуации с \code{throw}\texttt{()}.
+
+\item Использование спецификации \code{noexcept} позволяет 
+    компилятору лучше оптимизировать код, т.к. 
+    не нужно  заботиться о сворачивании стека.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Использование \texttt{noexcept}}
+    \begin{lstlisting}
+void no_throw() noexcept;
+void may_throw();
+
+// копирующий конструктор noexcept
+struct NoThrow { int m[100] = {}; };
+
+// копирующий конструктор noexcept(false)
+struct MayThrow { std::vector<int> v; };
+    \end{lstlisting}
+
+\begin{lstlisting}
+MayThrow mt; 
+NoThrow  nt;
+
+bool a = noexcept(may_throw());  // false
+bool b = noexcept(no_throw());   // true
+
+bool c = noexcept(MayThrow(mt)); // false
+bool d = noexcept(NoThrow(nt));  // true
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Условный \texttt{noexcept}}
+    В спецификации \texttt{noexcept} можно использовать 
+    условные выражения времени компиляции.
+\begin{lstlisting}
+template <class T, size_t N>
+void swap(T (&a)[N], T (&b)[N]) 
+        noexcept(noexcept(swap(*a, *b)));
+
+template <class T1, class T2>
+struct pair {
+    void swap(pair & p) 
+        noexcept(noexcept(swap(first, p.first)) &&
+                 noexcept(swap(second, p.second)))
+    {
+        swap(first, p.first);
+        swap(second, p.second);
+    }
+
+    T1 first;
+    T2 second;
+};
+\end{lstlisting}
+\end{frame}
+
+% TODO: добавить задачу про declval
+
+\begin{frame}[fragile]{Зависимость от \texttt{noexcept}}
+    Проверка \code{noexcept} используется в стандартной 
+    библиотеке для обеспечения строгой гарантии безопасности исключений с помощью
+    \texttt{std::move\_if\_noexcept} (например, \texttt{vector::push\_back}).
+
+\begin{lstlisting}
+struct Bad {
+    Bad() {}
+    Bad(Bad&&);      // может бросить
+    Bad(const Bad&); // не важно
+};
+struct Good {
+    Good() {}
+    Good(Good&&) noexcept; // не бросает
+    Good(const Good&) ;    // не важно
+};
+\end{lstlisting}
+\begin{lstlisting}
+Good g1;
+Bad  b1;
+Good g2 = std::move_if_noexcept(g1); // move
+Bad  b2 = std::move_if_noexcept(b1); // copy
+\end{lstlisting}
+    
+\end{frame}
+
+\begin{frame}[fragile]{Заключение}
+    \begin{itemize}
+        \item Проектируйте архитектуру приложения с учётом ислючений.
+        
+        \pitem Функции, не бросающие исключения, нужно  объявлять
+        как \code{noexcept}.
+        
+        \pitem Все использующие исключения функции  должны
+        обеспечивать как минимум базовую  гарантию безопасности исключений.
+        
+        \pitem Там, где это возможно, старайтесь обеспечить 
+        строгую гарантию безопасности исключений.
+        
+        \pitem Используйте \texttt{swap}, умные указатели и другие
+        RAII объекты  для обеспечения строгой безопасности исключений.
+    \end{itemize}
+\end{frame}
+
+\end{document}

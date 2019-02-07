@@ -1,0 +1,452 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Ещё о нововведениях \langcpp 11/\langcpp 14}
+
+\date{
+   \textbf{CS центр}\\
+   27 февраля 2018 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{8pt}{0.92em}\ttfamily,  
+        keywordstyle=\fontsize{8pt}{0.92em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{8pt}{0.92em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+% TODO: сделать текстовый степ
+%\begin{frame}[fragile]{Наследование от списка типов}
+%\begin{lstlisting}
+%template <typename... BaseClasses> 
+%struct ClassName : BaseClasses... {
+%    ClassName (BaseClasses&&... base_classes) 
+%        : BaseClasses(base_classes)... 
+%    {}
+%};
+%\end{lstlisting}
+%
+%Можно использовать \code{sizeof...} для определения количества %параметров. 
+%\begin{lstlisting}
+%template<typename ...Args> struct SomeStruct {
+%    static const int count = sizeof...(Args);
+%};
+%\end{lstlisting}
+%\end{frame}
+
+
+\begin{frame}[fragile]{Ключевые слова \code{default} и \code{delete}}
+\begin{lstlisting}
+struct SomeType {
+    SomeType() = default; // Конструктор по умолчанию.
+    SomeType(OtherType value);
+};
+
+struct NonCopyable {
+    NonCopyable() = default;
+    NonCopyable(const NonCopyable&) = delete;
+    NonCopyable & operator=(const NonCopyable&) = delete;
+};
+\end{lstlisting}
+\pause\medskip
+Удалять можно и обычные функции.
+\begin{lstlisting}
+template<class T>
+void foo(T const * p) { ... }
+
+void foo(char const *) = delete;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Делегация конструкторов}
+    \begin{lstlisting}
+struct SomeType  {
+    SomeType(int newNumber): number(newNumber) {}
+    SomeType() : SomeType(42) {}
+private:
+    int number;
+};
+struct SomeClass {
+    SomeClass() {}
+    explicit SomeClass(int newValue): value(newValue) {}
+private:
+    int value = 5;
+};
+struct BaseClass {
+    BaseClass(int value);
+};
+struct DerivedClass : public BaseClass {
+    using BaseClass::BaseClass;
+};
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Явное переопределение и финальность}
+    \begin{lstlisting}
+struct Base {
+    virtual void update();
+    virtual void foo(int);
+    virtual void bar() const;
+};
+struct Derived : Base {
+    void updata() override;          	  // error
+    void foo(int) override;               // OK
+    virtual void foo(long) override;      // error
+    virtual void foo(int) const override; // error
+    virtual int  foo(int) override;       // error
+    virtual void bar(long);               // OK
+    virtual void bar() const final;       // OK
+};
+struct Derived2 final : Derived {
+    virtual void bar() const;       // error
+};
+struct Derived3 : Derived2 {};      // error
+    \end{lstlisting}
+\end{frame}
+
+% TODO: слайд про enum-ы
+%    \item Перечисления со строгой типизацией: 
+%\begin{lstlisting}
+%enum class Enum1 { Val1, Val2, Val3 = 100, Val4 };
+%enum class Enum2 : unsigned int { Val1, Val2i };
+%\end{lstlisting}
+
+
+\begin{frame}[fragile]{Константные выражения}
+Для констант и функций времени компиляции.
+\begin{lstlisting}
+constexpr double accOfGravity = 9.8;
+constexpr double moonGravity = accOfGravity / 6;
+
+constexpr int pow(int x, int k) 
+{ return k == 0 ? 1 : x * pow(x, k - 1); }
+
+int data[pow(3, 5)] = {};
+\end{lstlisting}
+
+\begin{lstlisting}
+struct Point {
+   double x, y;
+   constexpr Point(double x = 0, double y = 0)
+       : x(x), y(y) {}
+   constexpr double getX() const { return x; }
+   constexpr double getY() const { return y; }
+};
+constexpr Point p(moonGravity, accOfGravity);
+constexpr auto x = p.getX();
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Range-based {\tt for}}
+Специально для работы с последовательностями.
+\begin{lstlisting}
+int array[] = {1, 4, 9, 16, 25, 36, 49};
+
+int sum = 0;
+// по значению
+for (int x : array) {
+    sum += x;
+}
+// по ссылке
+for (int & x : array) {
+    x *= 2;
+}
+\end{lstlisting}
+
+Применим к встроенным массивам, спискам инициализации, контейнерам из стандартной библиотеки и любым другим типам, для которых определены функции \texttt{begin()} и \texttt{end()}, возвращающие итераторы  (об этом будет рассказано дальше).      
+\end{frame}
+
+\begin{frame}[fragile]{Списки инициализации}
+Возможность передать в функцию список значений.
+\begin{lstlisting}
+// в конструкторах массивов и других контейнеров
+template<typename T>
+struct Array {
+    Array(std::initializer_list<T> list);
+};
+
+Array<int> primes = {2, 3, 5, 7, 11, 13, 17};
+\end{lstlisting}
+
+\begin{lstlisting}
+// в обычных функциях
+int sum(std::initializer_list<int> list) {
+    int result = 0;
+    for (int x : list) 
+        result += x;
+    return result;
+}
+
+int s = sum({1, 1, 2, 3, 5, 8, 13, 21});
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Универсальная инициализация}
+\begin{lstlisting}
+struct CStyleStruct {
+    int x;
+    double y;
+};
+struct CPPStyleStruct {
+    CPPStyleStruct(int x, double y): x(x), y(y) {}
+    int x;
+    double y;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+CStyleStruct 	s1 = {19, 72.0};// инициализация по-старому
+CPPStyleStruct  s2(19, 83.0); 	// вызов конструктора по-старому
+\end{lstlisting}
+
+\begin{lstlisting}
+CStyleStruct 	s1{19, 72.0}; // инициализация по-новому
+CPPStyleStruct  s2{19, 83.0}; // вызов конструктора по-новому
+\end{lstlisting}
+
+\begin{lstlisting}
+// тип не обязателен
+CStyleStruct getValue() { return {6, 4.2}; } 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Новые строковые литералы}
+\begin{lstlisting}
+u8"I'm a UTF-8 string."         // char[]
+u"This is a UTF-16 string."     // char\_16\_t[]
+U"This is a UTF-32 string."     // char\_32\_t[]
+L"This is a wide-char string."  // wchar\_t[]
+
+u8"This is a Unicode Character: \u2018."
+u"This is a bigger Unicode Character: \u2018."
+U"This is a Unicode Character: \U00002018."
+
+R"(The String Data \ Stuff " )"
+R"delimiter(The String Data \ Stuff " )delimiter"
+
+LR"(Raw wide string literal \t (without a tab))"
+u8R"XXX(I'm a "raw UTF-8" string.)XXX"
+uR"*(This is a "raw UTF-16" string.)*"
+UR"(This is a "raw UTF-32" string.)"
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}
+\begin{center}
+\huge Семантика перемещения
+\end{center}
+\end{frame}
+
+% % % % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Излишнее копирование}
+\begin{lstlisting}
+struct String {
+    String() = default;
+    String(String const & s);
+    String & operator=(String const & s);
+    //...
+private:
+    char * data_ = nullptr;
+    size_t size_ = 0;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+String getCurrentDateString() {
+    String date;
+    // date заполняется "21 октября 2015 года"
+    return date;
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+String date = getCurrentDateString();
+\end{lstlisting}
+\end{frame}
+
+% % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Перемещающий конструктор и перемещающий~оператор присваивания}
+\begin{lstlisting}
+struct String 
+{
+    String (String && s) // \&\& - rvalue reference
+        : data_(s.data_)
+        , size_(s.size_) {
+        s.data_ = nullptr;
+        s.size_ = 0;
+    }
+    String & operator = (String && s) {
+        delete [] data_;
+        data_ = s.data_;
+        size_ = s.size_;
+        s.data_ = nullptr;
+        s.size_ = 0;
+        return *this;
+    }
+};
+\end{lstlisting}
+\end{frame}                                
+
+% % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Перемещающие методы при помощи \code{swap}}
+\begin{lstlisting}
+#include<utility>
+
+struct String 
+{
+    void swap(String & s) { 
+        std::swap(data_, s.data_);
+        std::swap(size_, s.size_);
+    }
+
+    String (String && s) { 
+        swap(s);
+    }
+    
+    String & operator = (String && s) {
+        swap(s);
+        return *this;
+    }
+};
+\end{lstlisting}
+\end{frame}
+
+% % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Использование перемещения}
+\begin{lstlisting}
+struct String {
+    String() = default;
+    String(String const & s);  // lvalue-reference
+    String & operator=(String const & s);
+    String(String && s);       // rvalue-reference
+    String & operator=(String && s);
+private:
+    char * data_ = nullptr;
+    size_t size_ = 0;
+};
+\end{lstlisting}
+
+\begin{lstlisting}
+String getCurrentDateString() {
+    String date;
+    // date заполняется "21 октября 2015 года"
+    return std::move(date);
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+String date = getCurrentDateString();
+\end{lstlisting}
+\end{frame}
+
+% % % % % % % % % % % % % % % %
+\begin{frame}[fragile]{Перегрузка с lvalue/rvalue ссылками}
+При перегрузке перемещающий метод вызывается для временных объектов
+и для явно перемещённых с помощью \texttt{std::move}.
+\begin{lstlisting}
+String a(String("Hello"));  // перемещение
+
+String b(a);                // копирование
+
+String c(std::move(b));     // перемещение
+
+a = b;                      // копирование
+
+b = std::move(c);           // перемещение
+
+c = String("world");        // перемещение
+\end{lstlisting}
+
+Это касается и обычных методов и функций, \\ которые принимают
+lvalue/rvalue-ссылки.  
+\end{frame}
+
+
+\begin{frame}[fragile]{Перемещающие особые методы}
+    \begin{itemize}
+        \item Особые методы класса:
+            \begin{itemize}
+                \item конструктор по умолчанию,
+                \item конструктор копирования,
+                \item оператор присваивания,
+                \item деструктор,
+                \item перемещающий конструктор,
+                \item перемещающий оператор присваивания.
+             \end{itemize}
+                
+        \pitem Перемещающие методы генерируются только, если в классе отсутствуют пользовательские копирующие операции, перемещающие операции и деструктор.
+
+        \pitem Генерация копирующих методов для классов с пользовательским конструктором признана устаревшей.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Пример: {\tt unique\_ptr}}
+    \begin{lstlisting}
+#include <memory>
+#include "units.hpp"
+
+void foo(std::unique_ptr<Unit> p);
+
+std::unique_ptr<Unit> bar();
+
+int main() {
+    std::unique_ptr<Unit> p1(new Elf()); // захват указателя
+
+    // теперь p2 владеет указателем
+    std::unique_ptr<Unit> p2(std::move(p1));
+    
+    p1 = std::move(p2);  // владение передаётся p1
+    
+    foo(std::move(p1));  // p1 передаётся в foo
+    
+    p2 = bar();  // std::move не нужен  
+} 
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Perfect forwarding}
+    \begin{lstlisting}
+// для lvalue
+template<typename T, typename Arg> 
+unique_ptr<T> make_unique(Arg & arg) { 
+    return unique_ptr<T>(new T(arg));
+} 
+
+// для rvalue
+template<typename T, typename Arg> 
+unique_ptr<T> make_unique(Arg && arg) { 
+    return unique_ptr<T>(new T(std::move(arg)));
+} 
+    \end{lstlisting}
+
+\texttt{std::forward} позволяет записать это одной функцией.
+    \begin{lstlisting}
+template<typename T, typename Arg> 
+unique_ptr<T> make_unique(Arg&& arg) { 
+    return unique_ptr<T>(
+        new T(std::forward<Arg>(arg)));
+} 
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Variadic templates $+$ perfect forwarding}
+Можно применить \texttt{std::forward} для списка параметров.
+\begin{lstlisting}
+template<typename T, typename ...Args> 
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(
+                new T(std::forward<Args>(args)...));
+}
+\end{lstlisting}
+Теперь \texttt{make\_unique} работает для произвольного числа аргументов.
+\begin{lstlisting}
+auto p = make_unique<Array<string>>(10, string("Hello"));
+\end{lstlisting}
+\end{frame}
+
+\end{document}
+
+

@@ -1,0 +1,604 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Лекция 12. Шаблоны. Умные указатели}
+
+\date{
+   \textbf{CS центр}\\
+   7 ноября 2017 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{7pt}{1em}\ttfamily,  
+        keywordstyle=\fontsize{7pt}{1em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{7pt}{1em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Проблема ``одинаковых классов''}
+\small
+\begin{minipage}{.47\textwidth}
+    \begin{lstlisting}
+struct ArrayInt {
+explicit ArrayInt(size_t size) 
+    : data_(new int[size])
+    , size_(size) {}
+
+~ArrayInt() {delete [] data_;}
+
+size_t size() const 
+{ return size_; }
+
+int operator[](size_t i) const 
+{ return data_[i]; }
+
+int & operator[](size_t i)       
+{ return data_[i]; }
+...
+private:
+    int *   data_;
+    size_t  size_;
+};
+    \end{lstlisting}
+\end{minipage}\hspace{.05\textwidth}%
+\begin{minipage}{.47\textwidth}
+    \begin{lstlisting}
+struct ArrayFlt {
+explicit ArrayFlt(size_t size) 
+    : data_(new float[size])
+    , size_(size) {}
+
+~ArrayFlt() {delete [] data_;}
+
+size_t size() const 
+{ return size_; }
+
+float operator[](size_t i) const 
+{ return data_[i]; }
+
+float & operator[](size_t i)       
+{ return data_[i]; }
+...
+private:
+    float  * data_;
+    size_t   size_;
+};
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Решение в стиле \langc: макросы}
+\small
+\begin{minipage}{.5\textwidth}
+    \begin{lstlisting}
+#define DEFINE_ARRAY(Name, Type)\
+struct Name {                   \
+explicit Name(size_t size)      \
+    : data_(new Type[size])     \
+    , size_(size) {}            \
+~Name() { delete [] data_; }    \
+                                \
+size_t size() const             \
+{ return size_; }               \
+                                \
+Type operator[](size_t i) const \
+{ return data_[i]; }            \
+Type & operator[](size_t i)     \ 
+{ return data_[i]; }            \
+...                             \
+private:                        \
+    Type *  data_;              \
+    size_t  size_;              \
+}
+    \end{lstlisting}
+\end{minipage}\hspace{.03\textwidth}%
+\begin{minipage}{.45\textwidth}
+    \begin{lstlisting}
+DEFINE_ARRAY(ArrayInt, int);
+DEFINE_ARRAY(ArrayFlt, float);
+
+int main()
+{
+    ArrayInt ai(10);
+    ArrayFlt af(20);
+    ...
+    return 0;
+}
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Решение в стиле \langcpp: шаблоны классов}
+\small
+\begin{minipage}{.5\textwidth}
+    \begin{lstlisting}
+template <class Type>
+struct Array {                               
+explicit Array(size_t size)      
+    : data_(new Type[size])     
+    , size_(size) {}                              
+~Array() { delete [] data_; }            
+                                
+size_t size() const             
+{ return size_; }               
+                                
+Type operator[](size_t i) const 
+{ return data_[i]; }            
+Type & operator[](size_t i)      
+{ return data_[i]; }            
+...                             
+private:                        
+    Type *  data_;              
+    size_t  size_;              
+};
+    \end{lstlisting}
+\end{minipage}\hspace{.03\textwidth}%
+\begin{minipage}{.45\textwidth}
+    \begin{lstlisting}
+int main()
+{
+    Array<int> ai(10);
+    Array<float> af(20);
+    ...       
+    return 0;
+}
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны классов с несколькими параметрами}
+\small
+\begin{minipage}{.5\textwidth}
+    \begin{lstlisting}
+template <class Type, 
+          class SizeT = size_t, 
+          class CRet = Type>
+struct Array {                               
+explicit Array(SizeT size)      
+    : data_(new Type[size])     
+    , size_(size) {}                                                              
+~Array() {delete [] data_;}            
+
+SizeT size() const {return size_;}               
+CRet operator[](SizeT i) const 
+{ return data_[i]; }            
+Type & operator[](SizeT i)      
+{ return data_[i]; }            
+...                             
+private:                        
+    Type *  data_;              
+    SizeT   size_;              
+};
+    \end{lstlisting}
+\end{minipage}\hspace{.03\textwidth}%
+\begin{minipage}{.45\textwidth}
+    \begin{lstlisting}
+void foo()
+{
+    Array<int> ai(10);
+    Array<float> af(20);
+    Array<Array<int>, 
+          size_t, 
+          Array<int> const&> 
+        da(30);
+    ...
+}
+
+typedef Array<int> Ints;
+typedef Array<Ints, size_t, 
+    Ints const &> IInts;
+
+void bar()
+{
+    IInts da(30);
+}
+
+    \end{lstlisting}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны функций: возведение в квадрат}
+\small
+    \begin{lstlisting}
+// C
+int   squarei(int   x)   { return x * x; }
+float squaref(float x)   { return x * x; }
+
+// C++
+int   square(int   x)  { return x * x; }
+float square(float x)  { return x * x; }
+
+// C++ + OOP
+struct INumber {
+    virtual  INumber * multiply(INumber * x) const = 0;
+};
+struct Int   : INumber { ... };
+struct Float : INumber { ... };
+INumber * square(INumber * x) { return x->multiply(x); }
+
+// C++ + templates
+template <typename Num>
+Num square(Num x) { return x * x; }
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны функций: сортировка}
+\small
+    \begin{lstlisting}
+// C
+void qsort(void * base, size_t nitems, size_t size, /*function*/);
+
+// C++
+void sort(int    * p,   int     * q);
+void sort(double * p,   double  * q);
+
+// C++ + OOP
+struct IComparable {
+    virtual  int compare(IComparable * comp) const = 0;
+    virtual ~IComparable() {}
+};
+void sort(IComparable ** p, IComparable ** q);
+
+// C++ + templates
+template <typename Type>
+void sort(Type * p, Type * q);
+    \end{lstlisting}
+{\bf NB}: у шаблонных функций нет параметров по умолчанию.
+\end{frame}
+
+\begin{frame}[fragile]{Вывод аргументов (deduce)}
+\small
+    \begin{lstlisting}
+template <typename Num>
+Num square(Num n) { return n * n; }
+
+template <typename Type>
+void sort(Type * p, Type * q);
+
+template <typename Type>
+void sort(Array<Type> & ar); 
+
+void foo() {
+    int a = square<int>(3);
+    int b = square(a) + square(4); // square<int>(..)
+    float * m = new float[10];
+    sort(m, m + 10);    // sort<float>(m, m + 10)
+    sort(m, &a);        // error: sort<float> vs. sort<int>
+    Array<double> ad(100);
+    sort(ad);           // sort<double>(ad)
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблоны методов}
+\small
+    \begin{lstlisting}
+template <class Type> 
+struct Array {
+    template<class Other>
+    Array( Array<Other> const& other )
+        : data_(new Type[other.size()])
+        , size_(other.size()) {
+        for(size_t i = 0; i != size_; ++i)
+            data_[i] = other[i];
+    }
+
+    template<class Other>
+    Array & operator=(Array<Other> const& other);
+    ...
+};
+
+template<class Type>
+template<class Other>
+Array<Type> & Array<Type>::operator=(Array<Other> const& other)
+{ ... return *this; }
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Функции для вывода параметров}
+\small
+    \begin{lstlisting}
+template<class First, class Second>
+struct Pair {
+    Pair(First const& first, Second const& second)
+        : first(first), second(second) {}
+    First first;
+    Second second;
+};
+
+template<class First, class Second>
+Pair<First, Second> makePair(First const& f, Second const& s) {
+    return Pair<First, Second>(f, s);
+}
+
+void foo(Pair<int, double> const& p);
+
+void bar() {   
+    foo(Pair<int, double>(3, 4.5));
+    foo(makePair(3, 4.5));
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Умные указатели}
+    \begin{enumerate}
+        \item Идиома RAII (Resource Acquisition Is Initialization):
+            время жизни ресурса связанно с временем жизни объекта.
+            \begin{itemize}
+                \item Получение ресурса в конструкторе.
+                \item Освобождение ресурса в деструкторе.
+            \end{itemize}
+
+        \item Основные области использования RAII:
+            \begin{itemize}
+                \item для управления памятью,
+                \item для открытия файлов или устройств,
+                \item для мьютексов или критических секций.
+            \end{itemize}
+
+        \item Умные указатели~--- объекты, инкапсулирующие владение памятью.
+            Синтаксически ведут себя так же, как и обычные указатели.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Основные стратегии}
+    \begin{enumerate}
+        \item \code{scoped\_ptr}~--- время жизни объекта ограничено временем
+            жизни умного указателя.
+        \item \code{shared\_ptr}~--- разделяемый объект, реализация с подсчётом
+            ссылок.
+        \item \code{intrusive\_ptr}~--- разделяемый объект, реализация самим
+            внутри объекта.
+        \item \code{linked\_ptr}~--- разделяемый объект, реализация списком
+            указателей.
+        \item \code{auto\_ptr}, \code{unique\_ptr}~--- эксклюзивное владение
+            объектом с передачей владения при присваивании. 
+        \item \code{weak\_ptr}~--- разделяемый объект, реализация с подсчётом
+            ссылок, слабая ссылка (используется вместе с \code{shared\_ptr}).
+    \end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]{\texttt{scoped\_ptr}}
+\small
+\begin{itemize}
+    \item Простой умный указатель: для хранения на стеке или в классе.
+    \item Единственные владелец.
+    \item Нельзя копировать и присваивать.
+    \item Нельзя вернуть владение объектом.
+\end{itemize}
+
+    \begin{lstlisting}
+template<class T> struct scoped_ptr {
+    explicit scoped_ptr(T * p = 0) : p_(p) {}
+    ~scoped_ptr(){ delete p_; }
+    ...
+    void reset(T * p = 0) { delete p_; p_ = p;}
+    T *  get() const { return p_; }
+private:
+    scoped_ptr(scoped_ptr const&);
+    scoped_ptr operator=(scoped_ptr const&); 
+
+    T   *   p_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{shared\_ptr}}
+\small
+\begin{itemize}
+    \item Для разделяемых объектов.
+    \item Ведётся подсчёт ссылок.
+    \item Нельзя вернуть владение объектом.
+\end{itemize}
+
+    \begin{lstlisting}
+template<class T> struct shared_ptr {
+    explicit shared_ptr(T * p = 0) : p_(p), c_(0) {
+        if (p_) c_ = new size_t(1);    
+    }
+    shared_ptr(shared_ptr const& ptr) : p_(ptr.p_), c_(ptr.c_) {
+        if(c_) ++*c_;
+    }
+    ~shared_ptr() { if (c_ && (--*c_ == 0)) delete p_, delete c_; }
+    ...
+private:
+    T       *   p_;
+    size_t  *   c_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{intrusive\_ptr}}
+\small
+\begin{itemize}
+    \item Для разделяемых объектов.
+    \item Объект самостоятельно управляет своим временем жизни.
+    \item Нельзя вернуть владение объектом.
+\end{itemize}
+
+    \begin{lstlisting}
+template<class T> struct intrusive_ptr {
+    explicit intrusive_ptr(T * p = 0) : p_(p) {
+        if (p_) intrusive_addref(p_);
+    }
+    intrusive_ptr(intrusive_ptr const& ptr) : p_(ptr.p) {
+        if (p_) intrusive_addref(p_);
+    }
+    ~intrusive_ptr() { 
+        if (p_) intrusive_release(p_);
+    }
+    ...
+private:
+    T   *   p_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{linked\_ptr}}
+\small
+\begin{itemize}
+    \item Для разделяемых объектов.
+    \item Указатели на один объект объединяются в список, исключает
+        необходимость дополнительного выделения памяти.
+    \item Нельзя вернуть владение объектом.
+\end{itemize}
+%    explicit linked_ptr(T * p = 0) : p_(p), next_(0), prev_(0) {}
+%    linked_ptr(linked_ptr const& ptr) : p_(ptr.p) {
+%        if (p_)
+%            list_insert(ptr, *this);
+%    }
+%    ~linked_ptr() {
+%        if (next_ == prev_)
+%            delete p_;
+%        else
+%            list_remove(*this);
+%    }
+    \begin{lstlisting}
+template<class T>
+struct linked_ptr {
+    ...
+    // Home assignment №3
+    ...
+private:
+    linked_ptr * next; 
+    linked_ptr * prev;
+    T   *   p_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{auto\_ptr}, \texttt{unique\_ptr}}
+\small
+\begin{itemize}
+    \item Для передачи и возврата указателей из функции.
+    \item Владение эксклюзивно и передаётся при присваивании.
+\end{itemize}
+    \begin{lstlisting}
+template<class T> struct auto_ptr {
+    explicit auto_ptr(T * p = 0) : p_(p) {}
+    auto_ptr(auto_ptr & ptr) : p_(ptr.p_) { ptr.p_ = 0; }
+    ~auto_ptr(){ delete p_; }
+    auto_ptr & operator=(auto_ptr & ptr) {
+        it (this == &ptr) return *this;
+        delete p_;
+        p_ = ptr.p_;
+        ptr.p_ = 0;
+        return *this;
+    }
+    T * release() { T * t = p_; p_ = 0; return t; }
+private:
+    T   *   p_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{weak\_ptr}}
+\small
+\begin{itemize}
+    \item Для использования вместе с \texttt{shared\_ptr}.
+    \item Слабая ссылка для исключения циклических зависимостей.
+    \item Не владеет объектом.
+\end{itemize}
+    \begin{lstlisting}
+template<class T> struct counter {
+    size_t links;
+    size_t weak_links;
+    T * data_;
+};
+
+template<class T> struct weak_ptr {
+    explicit weak_ptr(shared_ptr<T> ptr);
+    shared_ptr<T> lock();
+    ...
+private:
+    counter<T> * c_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Заключение}
+\small
+\begin{itemize}
+    \item Умные указатели намного удобнее ручного управления памятью.
+    \item Для локальных объектов~--- \code{scoped\_ptr} или \code{scoped\_array}.
+    \item Для разделяемых объектов~--- \code{shared\_ptr} или \code{shared\_array}.
+    \item Использовать \code{auto\_ptr} нужно с большой осторожностью, т.к. у
+        него нестандартная семантика присваивания.
+    \item В сильносвязанных системах рассмотрите возможность использовать
+        \code{weak\_ptr}.
+    \item Используйте \code{intrusive\_ptr} для тех объектов, которые
+        сами управляют своим временем жизни.
+    \item Прочитайте документацию по \code{shared\_ptr}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Safe bool: проблема}{}
+    \begin{lstlisting}
+struct Testable { 
+    operator bool() const { return false; }
+};
+
+struct AnotherTestable {
+    operator bool() const { return true; }
+};
+
+int main (void)
+{
+    Testable a;
+    AnotherTestable b;
+    if (a == b) { /* blah blah blah*/ }
+    if (a < 0) { /* blah blah blah*/ }
+
+    return 0;
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Safe bool idiom}
+    \begin{lstlisting}
+struct Testable {
+    explicit Testable(bool b=true): ok_(b) {}
+ 
+    operator bool_type() const {
+      return ok_ ? 
+        & Testable::this_type_does_not_support_comparisons : 0;
+    }
+private:
+    typedef void (Testable::*bool_type)() const;
+    
+    void this_type_does_not_support_comparisons() const {}
+
+    bool ok_;
+};
+
+struct AnotherTestable  {...};.
+    \end{lstlisting}
+
+\end{frame}
+
+\begin{frame}[fragile]{Safe bool idiom (cont.)}
+    \begin{lstlisting}
+...
+template <typename T>
+bool operator<(const Testable& lhs, const T&) {
+    lhs.this_type_does_not_support_comparisons();
+    return false;
+}
+...
+int main() {
+    Testable t1;
+    AnotherTestable t2;
+    if (t1) {} // Works as expected
+    if (t2 == t1) {} // Fails to compile
+    if (t1 < 0) {} // Fails to compile
+    return 0;
+} 
+    \end{lstlisting}
+\end{frame}
+
+\end{document}
+
+ 

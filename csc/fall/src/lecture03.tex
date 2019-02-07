@@ -1,0 +1,445 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Лекция 3. Массивы, указатели и ссылки}
+
+\date{
+   \textbf{CS центр}\\
+   12 сентября 2017 \\
+   Санкт-Петербург
+}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Указатели}
+    \begin{itemize}
+        \item Указатель — это переменная, хранящая адрес некоторой 
+            ячейки памяти.
+           
+        \item Указатели являются типизированными.
+\begin{lstlisting}
+int   i = 3; // переменная типа int
+int * p = 0; // указатель на переменную типа int
+\end{lstlisting}
+        
+        \item Нулевому указателю (которому присвоено значение \code{0}) не~соответствует никакая ячейка памяти.
+
+        \item Оператор взятия адреса переменной \code{\&}.
+
+        \item Оператор разыменования \code{*}.
+
+\begin{lstlisting}
+p  = &i; // указатель p указывает на переменную i
+*p = 10; // изменяется ячейка по адресу p, т.е. i
+\end{lstlisting}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Передача параметров по указателю}
+Рассмотрим функцию, меняющую параметры местами:
+\begin{lstlisting}
+void swap (int a, int b) {
+    int t = a;
+    a = b;
+    b = t;
+}
+
+int main() {
+    int k = 10, m = 20;
+    swap (k, m);
+    cout << k << ' ' << m << endl; // 10 20
+    return 0;
+}
+\end{lstlisting}
+
+{\tt swap} изменяет локальные копии переменных {\tt k} и {\tt m}.
+\end{frame}
+
+\begin{frame}[fragile]{Передача параметров по указателю}
+    Вместо значений типа \code{int} будем передавать указатели.
+\begin{lstlisting}
+void swap (int * a, int * b) {
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+int main() {
+    int k = 10, m = 20;
+    swap (&k, &m);
+    cout << k << ' ' << m << endl; // 20 10
+    return 0;
+}
+\end{lstlisting}
+
+{\tt swap} изменяет переменные {\tt k} и {\tt m} по указателям на них.
+\end{frame}
+
+
+\begin{frame}[fragile]{Массивы}
+    \begin{itemize}
+        \item Массив~— это набор однотипных элементов, расположенных в памяти
+            друг за другом, доступ к которым осуществляется по индексу.
+
+        \item \langcpp позволяет определять массивы на стеке.
+\begin{lstlisting}
+// массив 1 2 3 4 5 0 0 0 0 0
+int m[10] = {1, 2, 3, 4, 5}; 
+\end{lstlisting}
+
+        \item Индексация массива начинается с \code{0}, последний элемент
+            массива длины {\tt n} имеет индекс {\tt n - 1}.
+\begin{lstlisting}
+for (int i = 0; i < 10; ++i)
+    cout << m[i] << ' '; 
+cout << endl;
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Связь массивов и указателей}
+    \begin{itemize}
+        \item Указатели позволяют передвигаться по массивам.
+        \item Для этого используется арифметика указателей:
+\begin{lstlisting}
+int m[10] = {1, 2, 3, 4, 5}; 
+int * p = &m[0]; // адрес начала массива
+int * q = &m[9]; // адрес последнего элемента
+\end{lstlisting}
+            \begin{itemize}
+                \item {\tt (p + k)} — сдвиг на {\tt k} ячеек типа \code{int} вправо.
+                \item {\tt (p - k)} — сдвиг на {\tt k} ячеек типа \code{int} влево.
+                \item {\tt (q - p)} — количество ячеек между
+                    указателями.
+                \item {\tt p[k]} эквивалентно {\tt *(p + k)}.
+            \end{itemize}
+    \end{itemize}
+\begin{center}
+\begin{tikzpicture}[
+      start chain=1 going right,node distance=-0.15mm
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=5mm, minimum height=5mm,draw,on chain=1];
+    \tikzstyle{arrow} = [>=stealth',shorten >=2pt, shorten <=2pt]
+
+    \foreach \i in {1,2}
+        \node[cell,dashed] {};
+        
+    \node[cell,dashed] (b) {};
+
+    \foreach \i in {1,2,3,4,5}
+        \node[cell,thick] (m\i) {\i};
+        
+    \foreach \i in {0,0,0}
+        \node[cell,thick] {\i};
+
+    \node[cell,thick] (e) {0};
+    \node[cell,thick] {0};
+
+    \node[below of=b,yshift=-10mm] (p) {{\tt p}};
+    \path [arrow,->] (p) edge node {} (b.south east);
+
+    \node[below of=e,yshift=-10mm] (q) {{\tt q}};
+    \path [arrow,->] (q) edge node {} (e.south east);
+
+    \node[below of=m2,yshift=-10mm] (p2) {{\tt (p + 2)}};
+    \path [arrow,->] (p2) edge node {} (m2.south east);
+
+    \node[below of=m5,yshift=-10mm] (q4) {{\tt (q - 4)}};
+    \path [arrow,->] (q4) edge node {} (m5.south east);
+
+    \foreach \i in {1,2,3}
+        \node[cell,dashed] {};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Примеры}
+Заполнение массива:
+\begin{lstlisting}
+int m[10] = {}; // изначально заполнен нулями
+// \hspace{2cm} \&m[0] \hspace{13mm}  \&m[9]
+for (int * p = m ; p <= m + 9; ++p )
+    *p = (p - m) + 1;    
+// Массив заполнен числами от 1 до 10
+\end{lstlisting}
+Передача массива в функцию:
+\begin{lstlisting} 
+int max_element (int * m, int size) {
+    int max = *m; 
+    for (int i = 1; i < size; ++i)
+        if (m[i] > max)
+            max = m[i];
+    return max;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Два способа передачи массива}
+\small
+\begin{lstlisting}
+bool contains(int * m, int size, int value) {
+    for (int i = 0; i != size; ++i)
+        if (m[i] == value)
+            return true;
+    return false;
+}
+bool contains(int * p, int * q, int value) {
+    for (; p != q; ++p)
+        if (*p == value)
+            return true;
+    return false;
+}
+\end{lstlisting}
+\begin{center}
+\begin{tikzpicture}[
+      start chain=1 going right,node distance=-0.15mm
+    ]
+    \tikzstyle{cell} = [rectangle,minimum width=5mm, minimum height=5mm,draw,on chain=1];
+    \tikzstyle{arrow} = [>=stealth',shorten >=2pt, shorten <=2pt]
+
+    \foreach \i in {1,2}
+        \node[cell,dashed] {};
+        
+    \node[cell,dashed] (b) {};
+
+    \foreach \i in {1,2,3,4,5}
+        \node[cell,thick] (m\i) {\i};
+        
+    \foreach \i in {0,0,0}
+        \node[cell,thick] {\i};
+
+    \node[cell,thick] {0};
+    \node[cell,thick] (e) {0};
+
+    \node[below of=b,yshift=-10mm] (p) {{\tt p}};
+    \path [arrow,->] (p) edge node {} (b.south east);
+
+    \node[below of=e,yshift=-10mm] (q) {{\tt q}};
+    \path [arrow,->] (q) edge node {} (e.south east);
+
+    \node[cell,dashed,color=red] {};
+
+    \foreach \i in {2,3}
+        \node[cell,dashed] {};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]{Возрат указателя из функции}
+Функция для поиска максимума в массиве:
+\begin{lstlisting}
+int max_element (int * p, int * q) {
+    int max = *p;
+    for (; p != q; ++p)
+        if (*p > max)
+            max = *p;
+
+    return max;
+}
+\end{lstlisting}
+\begin{lstlisting}
+    int m[10] = {...};
+    int max = max_element(m, m + 10); 
+    cout << "Maximum = " << max << endl; 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Возрат указателя из функции}
+Функция для поиска максимума в массиве:
+\begin{lstlisting}
+int * max_element (int * p, int * q) {
+    int * pmax = p;
+    for (; p != q; ++p)
+        if (*p > *pmax)
+            pmax = p;
+
+    return pmax;
+}
+\end{lstlisting}
+\begin{lstlisting}
+    int m[10] = {...};
+    int * pmax = max_element(m, m + 10); 
+    cout << "Maximum = " << *pmax << endl; 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Возрат значения через указатель}
+Функция для поиска максимума в массиве:
+\begin{lstlisting}
+bool max_element (int * p, int * q, int * res) {
+    if (p == q)
+        return false;
+    *res = *p;
+    for (; p != q; ++p)
+        if (*p > *res)
+            *res = *p;
+    return true;
+}
+\end{lstlisting}
+\begin{lstlisting}
+    int m[10] = {...};
+    int max = 0;
+    if (max_element(m, m + 10, &max)) 
+        cout << "Maximum = " << max << endl; 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Возрат значения через указатель на указатель}
+Функция для поиска максимума в массиве:
+\begin{lstlisting}
+bool max_element (int * p, int * q, int ** res) {
+    if (p == q)
+        return false;
+    *res = p;
+    for (; p != q; ++p)
+        if (*p > **res)
+            *res = p;
+    return true;
+}
+\end{lstlisting}
+\begin{lstlisting}
+    int m[10] = {...};
+    int * pmax = 0;
+    if (max_element(m, m + 10, &pmax)) 
+        cout << "Maximum = " << *pmax << endl; 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Недостатки указателей}
+    \begin{itemize}
+        \item Использование указателей синтаксически загрязняет код
+            и усложняет его понимание.
+            (Приходится использовать операторы \code{*} и \code{\&}.)
+
+        \item Указатели могут быть неинициализированными (некорректный код).
+
+        \item Указатель может быть нулевым (корректный код), 
+            а значит указатель нужно проверять на равенство нулю.
+
+        \item Арифметика указателей может сделать из корректного указателя
+            некорректный (легко промахнуться).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ссылки}
+    \begin{itemize}
+        \item Для того, чтобы исправить некоторые недостатки указателей,
+            в \langcpp введены ссылки.
+
+        \item Ссылки являются ``красивой обёрткой'' над указателями:
+\begin{lstlisting}
+void swap (int & a, int & b) {
+    int t = b;
+    b = a;
+    a = t;
+}
+
+int main() {
+    int k = 10, m = 20;
+    swap (k, m);
+    cout << k << ' ' << m << endl; // 20 10
+    return 0;
+}
+\end{lstlisting}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Различия ссылок и указателей}
+    \begin{itemize}
+        \item Ссылка не может быть неинициализированной.
+\begin{lstlisting}
+int * p; // OK
+int & l; // ошибка
+\end{lstlisting}
+
+        \item У ссылки нет нулевого значения.            
+\begin{lstlisting}
+int * p = 0; // OK
+int & l = 0; // ошибка
+\end{lstlisting}
+            
+    \item Ссылку нельзя переприсвоить:
+\begin{lstlisting}
+int a = 10, b = 20;
+int * p = &a; // p указывает на a
+p = &b;       // p указывает на b
+int & l = a;  // l ссылается на a
+l = b;        // a присваивается значение b
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Различия ссылок и указателей}
+    \begin{itemize}
+        \item Нельзя получить адрес ссылки или ссылку на ссылку.
+\begin{lstlisting}
+int a = 10;
+int * p = &a;  // p указывает на a
+int ** pp = &p;// pp указывает на переменную p
+int & l = a;   // l ссылается на a
+int * pl = &l; // pl указывает на переменную a
+int && ll = l; // ошибка
+\end{lstlisting}
+
+        \item Нельзя создавать массивы ссылок.
+\begin{lstlisting}
+int * mp[10] = {};  // массив указателей на int
+int & ml[10] = {};  // ошибка
+\end{lstlisting}
+
+        \item Для ссылок нет арифметики.
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{lvalue и rvalue}
+    \begin{itemize}
+        \item Выражения в \langcpp можно разделить на два типа:
+            \begin{enumerate}
+                \item {\bf lvalue}~--- выражения, значения которых являются
+                    {\em ссылкой} на переменную/элемента массива, 
+                    а значит могут быть указаны слева от оператора \code{=}.
+                    
+                \item {\bf rvalue}~--- выражения, значения которых являются
+                    временными и не соответствуют никакой переменной/элементу
+                    массива.
+            \end{enumerate}
+
+        \item Указатели и ссылки могут указывать только на lvalue.
+\begin{lstlisting}
+int a = 10, b = 20;
+int m[10] = {1,2,3,4,5,5,4,3,2,1};
+int & l1 = a;       // OK
+int & l2 = a + b;   // ошибка
+int & l3 = *(m + a / 2);        // OK
+int & l4 = *(m + a / 2) + 1;    // ошибка
+int & l5 = (a + b > 10) ? a : b;  // OK
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Время жизни переменной}
+    Следует следить за временем жизни переменных.
+\begin{lstlisting}
+int * foo() {
+    int a = 10;
+    return &a;
+}
+
+int & bar() {
+    int b = 20;
+    return b;
+}
+\end{lstlisting}
+\begin{lstlisting}
+    int * p = foo();
+    int & l = bar();
+\end{lstlisting}
+
+\end{frame}
+
+\end{document}

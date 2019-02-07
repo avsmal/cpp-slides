@@ -1,0 +1,331 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{STL: последовательные контейнеры}
+
+\date{
+   \textbf{CS центр}\\
+   13 марта 2018 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{8pt}{0.92em}\ttfamily,  
+        keywordstyle=\fontsize{8pt}{0.92em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{8pt}{0.92em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}{STL: введение}
+    \begin{itemize}
+        \item STL = Standard Template Library.
+        
+        \item STL является частью стандартной библиотеки \langcpp, описана в стандарте, но не упоминается там явно.
+            
+        \item Авторы: Александр Степанов, Дэвид Муссер и Менг Ли\\ 
+            (сначала для HP, а потом для SGI).
+
+        \item Основана на разработках для языка Ада.
+    \end{itemize}
+\pause
+\begin{block}{Основные составляющие}
+    \begin{itemize}
+        \item контейнеры (хранение объектов в памяти),
+        \item итераторы (доступ к элементам контейнера),
+        \item адаптеры (обёртки над контейнерами),
+        \item алгоритмы (для работы с последовательностями),
+        \item функциональные объекты, функторы (обобщение функций).
+    \end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Преимущества стандартной библиотеки}{}
+    \begin{itemize}
+        \item стандартизированность,
+        \item общедоступность,
+        \item эффективность,
+        \item общеизвестность,
+        \item \dots
+    \end{itemize}
+\pause
+\begin{block}{Чего нет в стандартной библиотеке?}
+    \begin{itemize}
+        \item сложных структур данных,
+        \item сложных алгоритмов,
+        \item работы с графикой/звуком,
+        \item ...
+    \end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Общие сведения о контейнерах}
+\small
+    Контейнеры библиотеки STL можно разделить на две категории: 
+    \begin{itemize}
+        \item последовательные, 
+        \item ассоциативные.
+    \end{itemize}
+    \pause
+    \begin{block}{Общие вложенные типы}
+    \begin{itemize} \tt
+        \item Container::value\_type
+        \item Container::iterator
+        \item Container::const\_iterator 
+    \end{itemize}
+    \end{block}\pause\vspace{-3mm}
+    \begin{block}{Общие методы контейнеров}
+    \begin{itemize}
+    \item Все ,,особенные методы`` и swap.
+
+    \item \texttt{size, max\_size, empty, clear}.
+    
+    \item \texttt{begin, end, сbegin, сend}.
+
+    \item Операторы сравнения: \texttt{==, !=, >, >=, <, <=}.
+    \end{itemize}
+\end{block}\vspace{-2mm}
+\textbf{Примечание:} вся STL определена в пространстве имён \texttt{std}.
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон {\tt array}}
+    Класс-обёртка над статическим массивом.
+
+\begin{itemize}
+    \item \texttt{operator[], at},
+    \item {\tt back, front}.
+    \item \texttt{fill},
+    \item \texttt{data}.
+\end{itemize}
+Позволяет работать с массивом как с контейнером.
+
+\begin{lstlisting}
+#include <array>
+
+std::array<std::string, 3> a = {"One", "Two", "Three"};
+std::cout << a.size() << std::endl;
+std::cout << a[1] << std::endl;
+
+// ошибка времени выполнения
+std::cout << a.at(3) << std::endl; 
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Общие методы остальных последовательных контейнеров}
+\begin{itemize}
+    \item Конструктор от двух итераторов.  
+    \item Конструктор от \texttt{count} и \texttt{defVal}.
+    \item Конструктор от \texttt{std::initializer\_list<T>}.
+    \item Методы {\tt back, front}.
+    \item Методы \texttt{push\_back, emplace\_back}    
+    \item Методы {\tt assign}.
+    \item Методы {\tt insert}. 
+    \item Meтоды \texttt{emplace}.
+    \item Методы \texttt{erase} от одного и двух итераторов. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон {\tt vector}}
+    Динамический массив с автоматическим изменением размера\\ при
+    добавлении элементов.
+
+\begin{itemize}
+    \item \texttt{operator[], at},
+    \item \texttt{resize},
+    \item \texttt{capacity, reserve, shrink\_to\_fit},
+    \item \texttt{pop\_back},
+    \item \texttt{data}.
+\end{itemize}
+
+Позволяет работать со старым кодом.
+\begin{lstlisting}
+#include <vector>
+
+std::vector<std::string> v = {"One", "Two"};
+v.reserve(100);
+v.push_back("Three");
+v.emplace_back("Four");
+legacy_function(v.data(), v.size());
+std::cout << v[2] << std::endl;
+\end{lstlisting}
+\end{frame}
+           
+\begin{frame}[fragile]{Шаблон {\tt deque}}
+Контейнер c возможностью быстрой вставки и удаления элементов на
+обоих концах за $O(1)$. Реализован как список указателей на массивы
+фиксированного размера.
+\begin{itemize}
+    \item {\tt operator[], at},
+    \item {\tt resize},
+    \item {\tt push\_front, emplace\_front}
+    \item \texttt{pop\_back, pop\_front},
+    \item \texttt{shrink\_to\_fit}.
+\end{itemize}
+\begin{lstlisting}
+#include <deque>
+
+std::deque<std::string> d = {"One", "Two"};
+d.emplace_back("Three");
+d.emplace_front("Zero");
+std::cout << d[1] << std::endl;
+\end{lstlisting}
+
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон {\tt list}}
+Двусвязный список. В любом месте контейнера 
+вставка и удаление производятся за $O(1)$.
+\begin{itemize}к
+    \item {\tt push\_front, emplace\_front},
+    \item \texttt{pop\_back, pop\_front},
+    \item \texttt{splice},
+    \item {\tt merge, remove, remove\_if, reverse, \\sort, unique}.
+\end{itemize}
+\begin{lstlisting}
+#include <list>
+
+std::list<std::string> l = {"One", "Two"};
+l.emplace_back("Three");
+l.emplace_front("Zero");
+std::cout << l.front() << std::endl;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Итерация по списку}
+У списка нет методов для доступа к элементам по индексу.\\
+Можно использовать range-based for:
+\begin{lstlisting}
+using std::string;
+std::list<string> l = {"One", "Two", "Three"};
+for (string & s : l)
+    std::cout << s << std::endl;
+\end{lstlisting}
+Для более сложных операций нужно использовать \emph{итераторы}.
+\begin{lstlisting}
+std::list<string>::iterator i = l.begin();
+for ( ; i != l.end(); ++i)
+    if (*i == "Two")
+        break;
+l.erase(i);
+\end{lstlisting}
+
+Итератор списка можно перемещать в обоих направлениях:
+\begin{lstlisting}    
+auto last = l.end();
+--last; // последний элемент
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон \texttt{forward\_list}}
+Односвязный список. В любом месте контейнера 
+вставка и удаление производятся за $O(1)$.
+\begin{itemize}
+    \item \texttt{insert\_after} и \texttt{emplace\_after} вместо \texttt{insert} и \texttt{emplace},
+    \item  \texttt{before\_begin, cbefore\_begin},
+    \item {\tt push\_front, emplace\_front, pop\_front},
+    \item {\tt splice\_after},
+    \item {\tt merge, remove, remove\_if, reverse,\\ sort, unique}.
+\end{itemize}
+
+\begin{lstlisting}
+#include <forward_list>
+using std::string;
+
+std::forward_list<string> fl = {"One", "Two"};
+fl.emplace_front("Zero");
+fl.push_front("Minus one");
+std::cout << fl.front() << std::endl;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон {\tt basic\_string}}
+Контейнер для хранения символьных последовательностей.
+\begin{lstlisting}
+typedef basic_string<char>	string;
+typedef basic_string<wchar_t> 	wstring;
+typedef basic_string<char16_t> 	u16string;
+typedef basic_string<char32_t>	u32string;
+\end{lstlisting}
+\begin{itemize}
+    \item Метод {c\_str()} для совместимости со старым кодом, 
+    \item поддержка неявных преобразований с \langc-строками,
+    \item \texttt{operator[], at},
+    \item \texttt{reserve, capacity, shrink\_to\_fit},
+    \item \texttt{append, operator+, operator+=},
+    \item \texttt{substr, replace, compare,} 
+    \item \texttt{find, rfind, find\_first\_of,\\ find\_first\_not\_of,
+    find\_last\_of,\\ find\_last\_not\_of} (в терминах {\em индексов})
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Адаптеры и псевдоконтейнеры}
+    Адаптеры:
+    \begin{itemize}
+        \item {\tt stack} —
+            реализация интерфейса стека.
+
+        \item {\tt queue} —
+            реализация интерфейса очереди.
+
+        \item {\tt priority\_queue} —
+            очередь с приоритетом на куче.
+    \end{itemize}
+    
+    Псевдо-контейнеры:
+    \begin{itemize}
+        \item {\tt vector<bool>}
+        \begin{itemize}
+            \item ненастоящий контейнер (не хранит {\tt bool}-ы),
+            \item использует proxy-объекты.
+        \end{itemize}
+        \item {\tt bitset}\\
+            Служит для хранения битовых масок.\\ Похож на
+            {\tt vector<bool>}.
+                        
+        \item {\tt valarray}\\
+            Шаблон служит для хранения числовых массивов
+            и оптимизирован для достижения повышенной\\ вычислительной
+            производительности. 
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Ещё о {\tt vector}}
+\small\setlength{\baselineskip}{0.6em}
+ \begin{itemize}
+     \item 	Самый универсальный последовательный контейнер. 
+
+     \item Во многих случаях самый эффективный.
+         
+     \item Предпочитайте \texttt{vector} другим контейнерам.
+ 
+     \item Интерфейс построен на итераторах, а не на индексах.
+ 
+     \item Итераторы ведут себя как указатели.
+\end{itemize}
+
+\medskip
+Использование {\tt reserve} и {\tt capacity}:
+    \begin{lstlisting}
+std::vector<int> v;
+v.reserve(N); // N — верхняя оценка на размер
+...
+if (v.capacity() == v.size()) // реаллокация
+    \end{lstlisting}
+
+Сжатие и очистка в \langcpp[03]:
+    \begin{lstlisting}
+std::vector<int> & v = getData();
+// shrink\_to\_fit
+std::vector<int>(v).swap(v); 
+// clear + shrink\_to\_fit 
+std::vector<int>().swap(v);
+    \end{lstlisting}
+
+\medskip
+
+\end{frame}
+
+
+\end{document}
+
+

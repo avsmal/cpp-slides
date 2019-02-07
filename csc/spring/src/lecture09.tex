@@ -1,0 +1,376 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Исключения}
+
+\date{
+   \textbf{CS центр}\\
+   3 апреля 2018 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{8pt}{0.85em}\ttfamily,  
+        keywordstyle=\fontsize{8pt}{0.85em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{8pt}{0.85em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+\newcommand{\fakeitem}{{\color{MOOCBlue}\textbullet}\ \ }
+
+\begin{frame}[fragile]{Логические ошибки и исключительные ситуации}
+\begin{itemize}
+\item \textbf{Логические ошибки}.\\
+Ошибки в логике работы программы, которые происходят 
+из-за неправильно написанного кода, т.е. это ошибки программиста:
+\begin{itemize} 
+    \item выход за границу массива,
+    \item попытка деления на ноль,
+    \item обращение по нулевому указателю,
+    \item \ldots
+\end{itemize}
+\pause
+\item \textbf{Исключительные ситуации}.\\
+Ситуации, которые требуют особой обработки.\\
+Возникновение таких ситуаций~— это ,,нормальное``  поведение программы.
+\begin{itemize} 
+    \item ошибка записи на диск,
+    \item недоступность сервера,
+    \item неправильный формат файла,
+    \item \ldots
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Выявление логических ошибок на этапе разработки}
+    \fakeitem Оператор \code{static\_assert}.\\
+    \mbox{}
+    \begin{lstlisting}
+#include<type_traits>
+
+
+
+template<class T> 
+void countdown(T start) 
+{
+    static_assert(std::is_integral<T>::value
+               && std::is_signed<T>::value, 
+                  "Requires signed integral type");
+                  
+    while (start >= 0) {
+        std::cout << start-- << std::endl;
+    }
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Выявление логических ошибок на этапе разработки}
+    \fakeitem Оператор \code{static\_assert}.\\
+    \fakeitem Макрос \texttt{assert}.
+    \begin{lstlisting}
+#include<type_traits>
+//\#define NDEBUG
+#include <cassert>
+
+template<class T> 
+void countdown(T start) 
+{
+    static_assert(std::is_integral<T>::value
+               && std::is_signed<T>::value, 
+                  "Requires signed integral type");
+    assert(start >= 0);
+    while (start >= 0) {
+        std::cout << start-- << std::endl;
+    }
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Способы сообщения об ошибке}
+\small
+    \begin{lstlisting}
+size_t write(string file, string data);
+    \end{lstlisting}
+
+        \pause\fakeitem Возврат статуса операции:
+    \begin{lstlisting}
+bool write(string file, string data, size_t & bytes);
+    \end{lstlisting}
+
+        \pause\fakeitem Возврат кода ошибки:
+    \begin{lstlisting}
+int const OK = 0, IO_WRITE_FAIL = 1, IO_OPEN_FAIL = 2;
+int write(string file, string data, size_t & bytes);
+    \end{lstlisting}
+
+        \pause\fakeitem Глобальная переменная для кода ошибки:
+    \begin{lstlisting}
+size_t write(string file, string data);
+    \end{lstlisting}
+
+    \begin{lstlisting}
+size_t bytes = write(f, data);
+if (errno) {
+    cerr << strerror(errno);
+    errno = 0;
+}
+\end{lstlisting}
+\pause\fakeitem Исключения.
+\end{frame}
+
+\begin{frame}[fragile]{Исключения}
+%Exceptions provide a formal, well-defined way for code that detects errors to pass the information up the call stack.
+%Исключение — объект, содержащий описание ошибки,
+%который передаётся от места её возникновения к месту обработки.
+
+    %An exception forces calling code to recognize an error condition and handle it. Unhandled exceptions stop program execution.
+
+    %An exception jumps to the point in the call stack that can handle the error. Intermediate functions can let the exception propagate. They do not have to coordinate with other layers.
+
+    %The exception stack-unwinding mechanism destroys all objects in scope according to well-defined rules after an exception is thrown.
+
+    %An exception enables a clean separation between the code that detects the error and the code that handles the error.
+
+
+\begin{lstlisting}
+size_t write(string file, string data) {
+    if (!open(file)) throw FileOpenError(file);
+    //...
+}
+double safediv(int x, int y) {
+    if (y == 0) throw MathError("Division by zero");
+    return double(x) / y;
+}
+void write_x_div_y(string file, int x, int y) {
+    try { 
+        write(file, to_string(safediv(x, y)));
+    } catch (MathError & s) { 
+        // обработка ошибки в safediv
+    } catch (FileError & e) { 
+        // обработка ошибки в write
+    } catch (...) { 
+        // все остальные ошибки
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Stack unwinding}
+При возникновении исключения объекты на стеке
+уничтожаются в естественном (обратном) порядке.
+\begin{lstlisting}
+void foo() {
+    D d;
+    E e(d);
+    if (!e) throw F();
+    G g(e);
+}
+void bar() {
+    A a;
+    try {
+        B b;
+        foo();
+        C c;
+    } catch (F & f) {
+        // обработка и пересылка
+        throw f;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Почему не стоит бросать встроенные типы}
+\begin{lstlisting}
+int foo() {
+    if (...) throw -1;
+    if (...) throw 3.1415;
+}
+void bar(int a) {
+    if (a == 0) throw string("Not my fault!");
+}
+int main () {
+    try { bar(foo());
+    } catch (string & s) {
+        // только текст
+    } catch (int a) { 
+        // мало информации
+    } catch (double d) { 
+        // мало информации
+    } catch (...) { 
+        // нет информации 
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Стандартные классы исключений}
+    Базовый класс для всех исключений (в {\tt <exception>}):
+    \begin{lstlisting}
+struct exception {
+  virtual ~exception();
+  virtual const char* what() const;
+}; 
+    \end{lstlisting}
+
+    Стандартные классы ошибок (в {\tt <stdexcept>}):\\
+    \begin{itemize}
+        \item {\tt logic\_error}: 
+     {\tt domain\_error}, {\tt invalid\_argument}, {\tt length\_error}, {\tt
+     out\_of\_range} 
+        \item {\tt runtime\_error}: 
+        {\tt range\_error},
+        {\tt overflow\_error}, 
+        {\tt underflow\_error}
+    \end{itemize}
+
+\begin{lstlisting}
+int main() {
+    try { ... }
+    catch (std::exception const& e) {
+       std::cerr << e.what() << '\n';
+    }
+}
+\end{lstlisting}
+\end{frame}
+ 
+
+\begin{frame}[fragile]{Исключения в стандартной библиотеке}
+\small
+        \fakeitem Метод \texttt{at} контейнеров {\tt array}, {\tt vector}, {\tt deque}, {\tt basic\_string}, {\tt bitset}, {\tt map}, {\tt unordered\_map} бросает {\tt out\_of\_range}.
+
+        \fakeitem Оператор \code{new} {\tt T} бросает {\tt bad\_alloc}.\\
+            Оператор {\tt \code{new} (std::nothrow) T} в возвращает 0.
+            
+        \fakeitem Оператор \code{typeid} от разыменованного нулевого указателя бросает {\tt bad\_typeid}.
+
+        \fakeitem Потоки ввода-вывода. 
+            \begin{lstlisting}
+std::ifstream file;
+file.exceptions( std::ifstream::failbit 
+               | std::ifstream::badbit );
+try {
+    file.open ("test.txt");
+    cout << file.get() << endl;
+    file.close();
+}
+catch (std::ifstream::failure const& e) {
+    cerr << e.what() << endl;
+}
+            \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Исключения в деструкторах}
+Исключения не должны покидать деструкторы.
+\begin{itemize}
+\item Двойное исключение:
+\begin{lstlisting}
+void foo() {
+    try {
+        Bad b; // исключение в деструкторе
+        bar(); // исключение
+    } catch (std::exception & e) {
+        // ...
+    }
+}
+\end{lstlisting}
+\item Неопределённое поведение:
+\begin{lstlisting}
+void bar() {
+    Bad * bad = new Bad[100];
+    // ислючение в деструкторе №20
+    delete [] bad;
+}
+\end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Исключения в конструкторе}
+Исключения — это единственный способ
+прервать  конструирование объекта и сообщить об ошибке.
+
+\begin{lstlisting}
+struct Database {
+   explicit Database(string const& uri) {
+      if (!connect(uri))
+         throw ConnectionError(uri);
+   }
+   ~Database() { disconnect(); }
+   // ...
+};
+int main() {
+   try {
+      Database * db = new Database("db.local");
+      db->dump("db-local-dump.sql");
+      delete db;
+   } catch (std::exception const& e) {
+      std::cerr << e.what() << '\n';
+   }
+}
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Исключения в списке инициализации}
+Позволяет отловить исключения при создании полей класса.
+\begin{lstlisting}
+struct System 
+{
+    System(string const& uri, string const& data)
+    try : db_(uri), dh_(data)
+    {
+        // тело конструктора
+    }
+    catch (std::exception & e) 
+    {
+        log("System constructor: ", e);
+        throw;
+    }
+    
+    Database    db_;
+    DataHolder  dh_;
+};   
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Как обрабатывать ошибки?}
+    Есть несколько ,,правил хорошего тона``.
+    
+        \fakeitem Разделяйте ,,ошибки программиста``
+            и ,,исключительные ситуации``.
+            
+        \fakeitem Используйте \texttt{assert} и \texttt{static\_assert} 
+        для выявления ошибок на этапе разработки.
+%    There is no point in handling such an error by using an exception because the error indicates that something in the code has to be fixed, and doesn't represent a condition that the program has to recover from at run time.
+        
+        \fakeitem В пределах одной логической части кода 
+        обрабатывайте ошибки централизованно и однообразно.
+
+        \fakeitem Обрабатывайте ошибки там, где их можно обработать.
+        
+        \fakeitem Если в данном месте ошибку не обработать, то
+             пересылайте её выше при помощи исключения.
+ 
+        \fakeitem Бросайте только стандартные классы исключений или производные от них.
+
+        \fakeitem Бросайте исключения по значению, а ловите по ссылке.
+
+        \fakeitem Отлавливайте все исключения в точке входа.
+           
+    %Use asserts to check for errors that should never occur. Use exceptions to check for errors that might occur, for example, errors in input validation on parameters of public functions. For more information, see the section titled Exceptions vs. Assertions.
+
+    %Use exceptions when the code that handles the error might be separated from the code that detects the error by one or more intervening function calls. Consider whether to use error codes instead in performance-critical loops when code that handles the error is tightly-coupled to the code that detects it.
+
+    %For every function that might throw or propagate an exception, provide one of the three exception guarantees: the strong guarantee, the basic guarantee, or the nothrow (noexcept) guarantee. 
+
+    %Throw exceptions by value, catch them by reference. Don’t catch what you can't handle. 
+    
+    %Don't use exception specifications, which are deprecated in C++11.
+    
+    %Use standard library exception types when they apply. Derive custom exception types from the exception Class hierarchy. 
+
+    %Don't allow exceptions to escape from destructors or memory-deallocation functions.
+\end{frame}
+
+\end{document}

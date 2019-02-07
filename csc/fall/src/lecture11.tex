@@ -1,0 +1,256 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Лекция 11. Указатели на функции, методы и члены данных}
+
+\date{
+   \textbf{CS центр}\\
+   24 октября 2017 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{7pt}{1em}\ttfamily,  
+        keywordstyle=\fontsize{7pt}{1em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{7pt}{1em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на функции}
+    Кроме указателей на значения в \texttt{C++} присутствуют три особенных 
+    типа указателей:
+    \begin{enumerate}
+        \item указатели на функции (унаследованно из \texttt{C}),
+        \item указатели на методы,
+        \item указатели на поля классов.
+    \end{enumerate}
+    
+    Указатели на функции (и методы) используются для
+    \begin{enumerate}
+        \item параметризация алгоритмов,
+        \item обратных вызовов (callback),
+        \item подписки на события (шаблон Listener),
+        \item создание очередей событий/заданий.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на функции: параметризация алгоритмов}
+\small
+    \begin{lstlisting}
+void qsort (void* base, size_t num, size_t size,
+           int (*compar)(const void*,const void*));
+    \end{lstlisting}
+
+Как это работает?
+    \begin{lstlisting}
+bool less   (double a, double b) { return a < b; }
+bool greater(double a, double b) { return a > b; }
+
+void sort(double * p, double * q, bool (*cmp)(double, double)) {
+    for (double * m = p; m != q; ++m)
+        for (double * r = m; r + 1 != q; ++r)
+            if ( cmp(*(r + 1), *r) )
+                swap(*r, *(r + 1));
+}
+int main() {
+    double m[100];
+    sort(m, m + 100, &less);
+    sort(m, m + 100, &greater);
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на функции: создание потока}
+    \begin{lstlisting}
+#include <pthread.h>
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                   void *(*start_routine) (void *), void *arg);
+
+double somedata[10][100];
+
+void * thread_fun(void * data) {
+    size_t const N = *((size_t *) data);
+    sort(somedata[N], somedata[N] + 100);
+    return 0;
+}
+int main( ) {
+    pthread_t threads[10];
+    size_t id[] = {0,1,2,3,4,5,6,7,8,9};
+    for (size_t i = 0; i != 10; ++i)
+        pthread_create(&threads[i], 0, &thread_fun, &id[i]);
+    ...
+}
+    \end{lstlisting}
+\end{frame}
+ 
+\begin{frame}[fragile]{Сразу о полезности \texttt{typedef}}
+Что здесь объявлено?
+    \begin{lstlisting}
+char * (*func(int, int))(int, int, int *, float);
+    \end{lstlisting}
+\pause
+
+Функция двух целочисленных параметров, возвращающая указатель на функцию,
+которая возвращает указатель на \texttt{char} и имеет собственный список
+формальных параметров вида: \texttt{(int, int, int *, float)}
+
+\medskip\pause
+
+Как стоило это написать:
+    \begin{lstlisting}
+typedef char* (*SomeFunction)(int, int, int *, float);
+
+SomeFunction func(int, int);
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Указатели на методы}
+\small
+В отличие от указателей на функции требуют экземпляр класса.
+    \begin{lstlisting}
+struct Person {
+        string name()       const;
+        string surname()    const;
+        string address()    const;
+};
+typedef string (Person::*person_method)() const;
+
+void print(Person const& p) {
+    static person_method im[3] = 
+        {&Person::name, &Person::surname, &Person::address};
+
+    for (size_t i = 0; i != 3; ++i)
+        cout << (p.*im[i])();
+}                               // person\_method mem  
+void sort(Person * p, Person * q, string (Person::*mem) () const);
+
+sort(persons, persons + 100, &Person::name);   
+sort(persons, persons + 100, &Person::surname);
+    \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{Указатели на члены данных}
+\small
+    Похожи на указатели на методы.
+    \begin{lstlisting}
+struct Person {
+        string name;
+        string surname;
+        string address;
+};
+typedef string Person::*person_field;
+
+void print(Person const& p) {
+    static person_field im[3] = 
+        {&Person::name, &Person::surname, &Person::address};
+
+    for (size_t i = 0; i != 3; ++i)
+        cout << (p.*im[i]);
+}                              // person\_field mem
+void sort(Person * p, Person * q, string Person::*mem);
+
+sort(persons, persons + 100, &Person::name);   
+sort(persons, persons + 100, &Person::surname);
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Резюме по синтаксису}
+\small    
+ Указатели на функции. 
+    \begin{lstlisting}
+int foo(double d) { return 0; }
+int main() {
+    int (*fptr)(double) = foo;
+    return fptr(3.5);
+}
+    \end{lstlisting}
+
+Указатели на методы и поля класса. 
+    \begin{lstlisting}
+struct Student { 
+    string name () const { return name_; } 
+    string name_;
+};
+int main() {
+    string (Student::*mptr)() const = &Student::name;
+    string  Student::*dptr          = &Student::name_;
+    Student s;
+    Student * p = &s;
+    (s.*mptr)() == (p->*mptr)();
+    (s.*dptr)   == (p->*dptr);
+}
+    \end{lstlisting}
+
+\end{frame}
+
+\begin{frame}[fragile]{Шаблон Listener}
+    Решение с помощью ООП:
+\begin{lstlisting}
+struct Button;
+
+struct ButtonListener {
+    virtual void onButtonClick(Button * b, bool down) = 0;
+    virtual ~ButtonListener(){}
+};
+struct Button {
+    void subscribe( ButtonListener * bl );
+};
+    \end{lstlisting}
+
+Решение с помощью указателей на функции:
+    \begin{lstlisting}
+struct Button;
+typedef void (*ButtonProc)(Button *, bool, void *);
+struct Button {
+    void subscribe( ButtonProc bp, void * arg );
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Как такие указатели устроены?}
+    \begin{block}{Что хранится в указателе на функцию?}
+        \pause Хранится адрес функции.
+    \end{block}
+
+    \begin{block}{Что хранится в указателе на поле класса?}
+        \pause
+        Хранится смещение поля от начала объекта.
+    \end{block}
+
+    \begin{block}{Что хранится в указателе на метод?}
+        \pause
+        Там хранятся:
+        \begin{enumerate}
+            \item адрес метода,
+            \item номер в таблице виртуальных методов,
+            \item смещение.
+        \end{enumerate}
+    \end{block}
+
+\end{frame}
+
+\begin{frame}[fragile]{Важные моменты}
+\begin{itemize}
+    \item Использование неинициализированных указателей на функции и методы
+        влечёт неопределённое поведение.
+
+    \item В шаблонном коде указатель на функцию ведёт себя так же, как
+        и объект класса с оператором \texttt{()}. Это позволяет использовать
+        указатели на функции в качестве функторов.
+
+    \item Для использования указателей на методы и поля классов нужны экземпляры
+        этих классов.
+
+    \item Указатели на методы и поля класса ни к чему не приводятся
+        (используется для safe bool).
+
+    \item Используйте \texttt{typedef}! $=)$.
+\end{itemize}
+\end{frame}
+
+\end{document}
+
+
+

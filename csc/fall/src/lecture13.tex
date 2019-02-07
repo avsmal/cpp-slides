@@ -1,0 +1,240 @@
+\documentclass{beamer}
+\usepackage{csc}
+\title{Лекция 13. Шаблоны, часть вторая}
+
+\date{
+   \textbf{CS центр}\\
+   5 декабря 2017 \\
+   Санкт-Петербург
+}
+
+\lstset{basicstyle=\fontsize{7pt}{1em}\ttfamily,  
+        keywordstyle=\fontsize{7pt}{1em}\color{MOOCBlue}\bfseries, 
+        commentstyle=\fontsize{7pt}{1em}\ttfamily\color{MOOCGreen}}
+
+\begin{document}
+\begin{frame} 
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Полная специализация шаблонов: классы}
+\small
+    \begin{lstlisting}
+template<class T>
+struct Array {
+    ...
+    T *   data_;
+};
+template<>
+struct Array<bool> {
+    static unsigned const BITS = 8 * sizeof(unsigned);
+    explicit Array(size_t size)
+        : size_(size)
+        , data_(new unsigned[size_ / BITS + 1])
+    {}
+    bool operator[](size_t i) const {
+        return data_[i / BITS] & (1 << (i % BITS)); 
+    }
+private:
+    size_t  size_;
+    unsigned *  data_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Полная специализация шаблонов: функции}
+\small
+    \begin{lstlisting}
+template<class T>
+void swap(T & a, T & b) 
+{
+    T tmp(a);
+    a = b;
+    b = tmp;
+}
+
+template<>
+void swap<Database>(Database & a, Database & b) 
+{
+    a.swap(b);
+}
+
+template<class T>
+void swap(Array<T> & a, Array<T> & b) 
+{
+    a.swap(b);
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Специализация шаблонов и перегрузка}
+\small
+    \begin{lstlisting}
+template<class T>
+void foo(T a, T b) { cout << "same types" << endl; }
+
+template<class T, class V>
+void foo(T a, V b) { cout << "different types" << endl; }
+
+template<>
+void foo<int, int>(int a, int b) { 
+    cout << "both parameters are int" << endl; 
+} 
+
+int main() {
+    foo(3, 4);
+    return 0;    
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Частичная специализация шаблонов}
+\small
+    \begin{lstlisting}
+template<class T>
+struct Array {
+    T & operator[](size_t i) { return data_[i]; }
+    ...
+};
+
+template<class T>
+struct Array<T *> {
+    explicit Array(size_t size)
+        : size_(size)
+        , data_(new T *[size_])
+    {}
+    
+    T & operator[](size_t i) { return *data_[i]; }
+
+private:
+    size_t  size_;
+    T **    data_;
+};
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Нетиповые шаблонные параметры}
+\small
+Параметрами шаблона могут быть типы, целочисленные значения, 
+указатели/ссылки на значения с внешней линковкой и шаблоны.
+    \begin{lstlisting}
+template<class T, size_t N, size_t M>
+struct Matrix {
+    ...
+    T & operator()(size_t i, size_t j) 
+    { return data_[M * j + i]; }
+private:
+    T data_[N * M];
+};
+
+template<class T, size_t N, size_t M, size_t K>
+Matrix<T, N, K> operator*(Matrix<T, N, M> const& a, 
+                          Matrix<T, M, K> const& b);
+
+// log - это глобальная переменная
+template<ofstream & log>
+struct FileLogger { ... };
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Шаблонные параметры~--- шаблоны}
+\small
+    \begin{lstlisting}
+// int --> string
+string toString( int i );
+
+// работает только с Array<>
+Array<string> toStrings( Array<int> const& ar ) {
+    Array<string> result(ar.size());
+    for (size_t i = 0; i != ar.size(); ++i)
+        result.get(i) = toString(ar.get(i));
+    return result;
+}
+
+// от контейнера требуются: конструктор от size, методы size() и get()
+template<template <class> class Container>
+Container<string> toStrings(Container<int> const& c) {
+    Container<string> result(c.size());
+    for (size_t i = 0; i != c.size(); ++i)
+        result.get(i) = toString(c.get(i));
+    return result;
+}
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Использование зависимых имён}
+\small
+    \begin{lstlisting}
+template<class T>
+struct Array {
+    typedef T value_type;
+    ...
+private:
+    size_t  size_;
+    T *     data_;
+};
+
+template<class Container>
+bool contains(Container const& c, 
+              typename Container::value_type const& v);
+
+int main()
+{
+    Array<int> a(10);
+    contains(a, 5);
+    return 0;
+}
+
+    \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Компиляция шаблонов}
+\small
+    \begin{itemize}
+        \item Шаблон независимо компилируется для каждого значения шаблонных
+            параметров.
+
+        \item Компиляция ({\em инстанциирование}) шаблона происходит в точке первого использования~---
+            {\em точке инстанциирования шаблона}.
+
+        \item Компиляция шаблонов классов~— ленивая, компилируются только те методы,
+            которые используются.
+        
+        \item В точке инстанциирования шаблон должен быть полностью определён.
+
+        \item Шаблоны следует определять в заголовочных файлах.
+
+        \item Все шаблонные функции (свободные функции и методы) являются
+            \code{inline}.
+
+        \item В разных единицах трансляции инстанциирование происходит
+            независимо.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Резюме про шаблоны}
+\small
+    \begin{itemize}
+        \item
+            Большие шаблонные классы следует разделять на два заголовочных файла:
+            объявление (\texttt{array.hpp}) и определение (\texttt{array\_impl.hpp}).
+
+        \item Частичная специализация и шаблонные параметры по умолчанию
+            есть только у шаблонов классов.
+
+        \item Вывод шаблонных параметров есть только у шаблонов функций.
+
+        \item Предпочтительно использовать перегрузку шаблонных функций вместо
+            их полной специализации.
+
+        \item Полная специализация функций~--- это обычные функции.
+    
+        \item Виртуальные методы, конструктор по умолчанию, конструктор
+            копирования, оператор присваивания и деструктор не могут быть
+            шаблонными.
+        \item Используйте \code{typedef} для длинных шаблонных имён.
+    \end{itemize}
+\end{frame}
+\end{document}
+
+ 
