@@ -119,19 +119,6 @@ if (errno) {
 \end{frame}
 
 \begin{frame}[fragile]{Исключения}
-%Exceptions provide a formal, well-defined way for code that detects errors to pass the information up the call stack.
-%Исключение — объект, содержащий описание ошибки,
-%который передаётся от места её возникновения к месту обработки.
-
-    %An exception forces calling code to recognize an error condition and handle it. Unhandled exceptions stop program execution.
-
-    %An exception jumps to the point in the call stack that can handle the error. Intermediate functions can let the exception propagate. They do not have to coordinate with other layers.
-
-    %The exception stack-unwinding mechanism destroys all objects in scope according to well-defined rules after an exception is thrown.
-
-    %An exception enables a clean separation between the code that detects the error and the code that handles the error.
-
-
 \begin{lstlisting}
 size_t write(string file, string data) {
     if (!open(file)) throw FileOpenError(file);
